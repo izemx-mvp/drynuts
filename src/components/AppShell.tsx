@@ -8,6 +8,7 @@ import {
   Users,
   ShoppingCart,
   Truck,
+  PackageOpen,
   Settings as SettingsIcon,
   LogOut,
   Bell,
@@ -41,7 +42,8 @@ const nav = [
   { to: "/finished", label: "Produits finis", icon: Boxes },
   { to: "/clients", label: "Clients", icon: Users },
   { to: "/orders", label: "Ventes / Commandes", icon: ShoppingCart },
-  { to: "/suppliers", label: "Fournisseurs", icon: Truck },
+  { to: "/suppliers-raw", label: "Fourn. matière", icon: Truck },
+  { to: "/suppliers-packaging", label: "Fourn. emballage", icon: PackageOpen },
   { to: "/settings", label: "Paramètres", icon: SettingsIcon },
 ] as const;
 
@@ -115,62 +117,70 @@ export function AppShell() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b bg-card/60 backdrop-blur flex items-center gap-3 px-4 md:px-6">
-          <div className="relative flex-1 max-w-xl">
+        <header className="h-16 border-b bg-card/70 backdrop-blur flex items-center gap-3 px-4 md:px-6">
+          <div className="relative w-full max-w-sm">
             <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Rechercher un produit, client, commande…"
+              placeholder="Rechercher…"
               className="pl-9 bg-background"
             />
           </div>
-          <Button variant="ghost" size="icon" onClick={toggleTheme} title="Thème">
-            {state.settings.theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
-          <div className="relative">
-            <Button variant="ghost" size="icon">
-              <Bell className="h-4 w-4" />
-            </Button>
-            {notif > 0 && (
-              <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px]">
-                {notif}
-              </Badge>
-            )}
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-2 px-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                    {user.name.split(" ").map((s) => s[0]).slice(0, 2).join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="hidden sm:block text-left">
-                  <div className="text-sm font-medium leading-none">{user.name}</div>
-                  <div className="text-[11px] text-muted-foreground">{user.email}</div>
-                </div>
+          <div className="ml-auto flex items-center gap-1">
+            <div className="relative">
+              <Button variant="ghost" size="icon" title="Notifications">
+                <Bell className="h-4 w-4" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
-                <SettingsIcon className="h-4 w-4 mr-2" /> Paramètres
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  logout();
-                  navigate({ to: "/login" });
-                }}
-              >
-                <LogOut className="h-4 w-4 mr-2" /> Déconnexion
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              {notif > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] pointer-events-none">
+                  {notif}
+                </Badge>
+              )}
+            </div>
+            <Button variant="ghost" size="icon" onClick={toggleTheme} title="Thème">
+              {state.settings.theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="gap-2 px-2 ml-1">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      {user.name.split(" ").map((s) => s[0]).slice(0, 2).join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="hidden sm:block text-left">
+                    <div className="text-sm font-medium leading-none">{user.name}</div>
+                    <div className="text-[11px] text-muted-foreground">{user.email}</div>
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
+                  <SettingsIcon className="h-4 w-4 mr-2" /> Paramètres
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    logout();
+                    navigate({ to: "/login" });
+                  }}
+                >
+                  <LogOut className="h-4 w-4 mr-2" /> Déconnexion
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main
+          className="flex-1 overflow-y-auto p-4 md:p-6 relative"
+          style={{
+            backgroundImage:
+              "radial-gradient(1200px 600px at -10% -10%, color-mix(in oklch, var(--primary) 10%, transparent) 0%, transparent 60%), radial-gradient(900px 500px at 110% 10%, color-mix(in oklch, var(--accent) 18%, transparent) 0%, transparent 55%), radial-gradient(700px 500px at 50% 120%, color-mix(in oklch, var(--primary) 8%, transparent) 0%, transparent 60%)",
+          }}
+        >
           <Outlet />
         </main>
       </div>
