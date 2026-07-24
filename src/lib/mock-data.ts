@@ -32,10 +32,11 @@ const suppliers = [
   { id: "sup-005", name: "PrintPack Rabat", category: "Emballage personnalisé", contact: "Mehdi Chraibi", phone: "+212 537 66 77 88", city: "Rabat" },
 ];
 
-const clients = [
-  { id: "cli-001", name: "BIM Maroc", type: "Autres" as ClientType, contact: "Direction Achats", phone: "+212 522 00 11 22", city: "Casablanca" },
-  { id: "cli-002", name: "Marjane Holding", type: "Autres" as ClientType, contact: "Service Fournisseurs", phone: "+212 522 33 44 55", city: "Casablanca" },
-  { id: "cli-003", name: "Duty Free Mohammed V", type: "Autres" as ClientType, contact: "Ahmed Tazi", phone: "+212 522 99 88 77", city: "Casablanca" },
+import type { Client } from "./types";
+const clients: Client[] = [
+  { id: "cli-001", name: "BIM Maroc", type: "Autres", contact: "Direction Achats", phone: "+212 522 00 11 22", city: "Casablanca" },
+  { id: "cli-002", name: "Marjane Holding", type: "Autres", contact: "Service Fournisseurs", phone: "+212 522 33 44 55", city: "Casablanca" },
+  { id: "cli-003", name: "Duty Free Mohammed V", type: "Autres", contact: "Ahmed Tazi", phone: "+212 522 99 88 77", city: "Casablanca" },
   { id: "cli-004", name: "Grossiste Derb Omar", type: "Gros grossiste", contact: "Hassan Alaoui", phone: "+212 522 30 40 50", city: "Casablanca" },
   { id: "cli-005", name: "Nour Distribution", type: "Petit grossiste", contact: "Fatima Zahra", phone: "+212 535 12 34 56", city: "Fès" },
   { id: "cli-006", name: "Épicerie Al Massira", type: "Détaillant", contact: "Omar Benali", phone: "+212 524 55 66 77", city: "Marrakech" },
