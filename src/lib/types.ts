@@ -79,6 +79,7 @@ export interface Client {
 export interface Supplier {
   id: ID;
   name: string;
+  kind: "raw" | "packaging";
   category: string;
   contact: string;
   phone: string;

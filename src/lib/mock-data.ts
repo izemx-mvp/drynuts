@@ -25,11 +25,11 @@ const clientTypes: ClientType[] = [
 ];
 
 const suppliers = [
-  { id: "sup-001", name: "Coopérative Souss", category: "Amandes / Noix", contact: "Youssef Amrani", phone: "+212 528 22 10 11", city: "Agadir" },
-  { id: "sup-002", name: "Atlas Dried Fruits", category: "Multi-produits", contact: "Sara Bennis", phone: "+212 535 44 55 66", city: "Fès" },
-  { id: "sup-003", name: "Sahara Palm Co.", category: "Dattes / Figues", contact: "Karim Idrissi", phone: "+212 524 33 21 09", city: "Errachidia" },
-  { id: "sup-004", name: "Packaging Maroc SA", category: "Emballage", contact: "Nadia El Fassi", phone: "+212 522 55 11 22", city: "Casablanca" },
-  { id: "sup-005", name: "PrintPack Rabat", category: "Emballage personnalisé", contact: "Mehdi Chraibi", phone: "+212 537 66 77 88", city: "Rabat" },
+  { id: "sup-001", name: "Coopérative Souss", kind: "raw" as const, category: "Amandes / Noix", contact: "Youssef Amrani", phone: "+212 528 22 10 11", city: "Agadir" },
+  { id: "sup-002", name: "Atlas Dried Fruits", kind: "raw" as const, category: "Multi-produits", contact: "Sara Bennis", phone: "+212 535 44 55 66", city: "Fès" },
+  { id: "sup-003", name: "Sahara Palm Co.", kind: "raw" as const, category: "Dattes / Figues", contact: "Karim Idrissi", phone: "+212 524 33 21 09", city: "Errachidia" },
+  { id: "sup-004", name: "Packaging Maroc SA", kind: "packaging" as const, category: "Emballage standard", contact: "Nadia El Fassi", phone: "+212 522 55 11 22", city: "Casablanca" },
+  { id: "sup-005", name: "PrintPack Rabat", kind: "packaging" as const, category: "Emballage personnalisé", contact: "Mehdi Chraibi", phone: "+212 537 66 77 88", city: "Rabat" },
 ];
 
 import type { Client } from "./types";
