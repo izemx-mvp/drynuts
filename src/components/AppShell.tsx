@@ -8,7 +8,6 @@ import {
   Users,
   ShoppingCart,
   Truck,
-  PackageOpen,
   Settings as SettingsIcon,
   LogOut,
   Bell,
@@ -42,8 +41,7 @@ const nav = [
   { to: "/finished", label: "Produits finis", icon: Boxes },
   { to: "/clients", label: "Clients", icon: Users },
   { to: "/orders", label: "Ventes / Commandes", icon: ShoppingCart },
-  { to: "/suppliers-raw", label: "Fourn. matière", icon: Truck },
-  { to: "/suppliers-packaging", label: "Fourn. emballage", icon: PackageOpen },
+  { to: "/suppliers", label: "Fournisseurs", icon: Truck },
   { to: "/settings", label: "Paramètres", icon: SettingsIcon },
 ] as const;
 
