@@ -4,23 +4,24 @@ import { PageHeader } from "@/components/PageHeader";
 import { CrudTable } from "@/components/CrudTable";
 import type { Supplier } from "@/lib/types";
 
-export const Route = createFileRoute("/_authenticated/suppliers")({
+export const Route = createFileRoute("/_authenticated/suppliers-packaging")({
   head: () => ({
     meta: [
-      { title: "Fournisseurs — DryNuts" },
-      { name: "description", content: "Gestion des fournisseurs de matière première et emballage." },
+      { title: "Fournisseurs emballage — DryNuts" },
+      { name: "description", content: "Fournisseurs d'emballages standard et personnalisés." },
     ],
   }),
-  component: SuppliersPage,
+  component: SuppliersPackagingPage,
 });
 
-function SuppliersPage() {
+function SuppliersPackagingPage() {
   const { state, update } = useStore();
+  const rows = state.suppliers.filter((s) => s.kind === "packaging");
   return (
     <div>
-      <PageHeader title="Fournisseurs" subtitle="Matière première et emballage" />
+      <PageHeader title="Fournisseurs · Emballage" subtitle="Sachets, bobines, emballages personnalisés" />
       <CrudTable<Supplier>
-        data={state.suppliers}
+        data={rows}
         columns={[
           { key: "name", label: "Nom" },
           { key: "category", label: "Catégorie" },
@@ -30,9 +31,7 @@ function SuppliersPage() {
           {
             key: "id",
             label: "Livraisons",
-            render: (s) =>
-              state.rawMaterials.filter((r) => r.supplierId === s.id).length +
-              state.packaging.filter((p) => p.supplierId === s.id).length,
+            render: (s) => state.packaging.filter((p) => p.supplierId === s.id).length,
           },
         ]}
         fields={[
@@ -42,13 +41,17 @@ function SuppliersPage() {
           { key: "phone", label: "Téléphone", type: "text", required: true },
           { key: "city", label: "Ville", type: "text", required: true },
         ]}
-        onCreate={(row) => update((s) => ({ ...s, suppliers: [row, ...s.suppliers] }))}
+        buildDefaults={() => ({ kind: "packaging" })}
+        onCreate={(row) =>
+          update((s) => ({ ...s, suppliers: [{ ...row, kind: "packaging" }, ...s.suppliers] }))
+        }
         onUpdate={(row) =>
-          update((s) => ({ ...s, suppliers: s.suppliers.map((x) => (x.id === row.id ? row : x)) }))
+          update((s) => ({
+            ...s,
+            suppliers: s.suppliers.map((x) => (x.id === row.id ? { ...row, kind: "packaging" } : x)),
+          }))
         }
-        onDelete={(id) =>
-          update((s) => ({ ...s, suppliers: s.suppliers.filter((x) => x.id !== id) }))
-        }
+        onDelete={(id) => update((s) => ({ ...s, suppliers: s.suppliers.filter((x) => x.id !== id) }))}
       />
     </div>
   );
