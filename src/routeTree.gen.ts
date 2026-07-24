@@ -12,8 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedSuppliersRawRouteImport } from './routes/_authenticated.suppliers-raw'
-import { Route as AuthenticatedSuppliersPackagingRouteImport } from './routes/_authenticated.suppliers-packaging'
+import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated.suppliers'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
 import { Route as AuthenticatedRawMaterialsRouteImport } from './routes/_authenticated.raw-materials'
 import { Route as AuthenticatedProductionRouteImport } from './routes/_authenticated.production'
@@ -37,18 +36,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedSuppliersRawRoute =
-  AuthenticatedSuppliersRawRouteImport.update({
-    id: '/suppliers-raw',
-    path: '/suppliers-raw',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedSuppliersPackagingRoute =
-  AuthenticatedSuppliersPackagingRouteImport.update({
-    id: '/suppliers-packaging',
-    path: '/suppliers-packaging',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
+const AuthenticatedSuppliersRoute = AuthenticatedSuppliersRouteImport.update({
+  id: '/suppliers',
+  path: '/suppliers',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -102,8 +94,7 @@ export interface FileRoutesByFullPath {
   '/production': typeof AuthenticatedProductionRoute
   '/raw-materials': typeof AuthenticatedRawMaterialsRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/suppliers-packaging': typeof AuthenticatedSuppliersPackagingRoute
-  '/suppliers-raw': typeof AuthenticatedSuppliersRawRoute
+  '/suppliers': typeof AuthenticatedSuppliersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -116,8 +107,7 @@ export interface FileRoutesByTo {
   '/production': typeof AuthenticatedProductionRoute
   '/raw-materials': typeof AuthenticatedRawMaterialsRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/suppliers-packaging': typeof AuthenticatedSuppliersPackagingRoute
-  '/suppliers-raw': typeof AuthenticatedSuppliersRawRoute
+  '/suppliers': typeof AuthenticatedSuppliersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -132,8 +122,7 @@ export interface FileRoutesById {
   '/_authenticated/production': typeof AuthenticatedProductionRoute
   '/_authenticated/raw-materials': typeof AuthenticatedRawMaterialsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/_authenticated/suppliers-packaging': typeof AuthenticatedSuppliersPackagingRoute
-  '/_authenticated/suppliers-raw': typeof AuthenticatedSuppliersRawRoute
+  '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -148,8 +137,7 @@ export interface FileRouteTypes {
     | '/production'
     | '/raw-materials'
     | '/settings'
-    | '/suppliers-packaging'
-    | '/suppliers-raw'
+    | '/suppliers'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -162,8 +150,7 @@ export interface FileRouteTypes {
     | '/production'
     | '/raw-materials'
     | '/settings'
-    | '/suppliers-packaging'
-    | '/suppliers-raw'
+    | '/suppliers'
   id:
     | '__root__'
     | '/'
@@ -177,8 +164,7 @@ export interface FileRouteTypes {
     | '/_authenticated/production'
     | '/_authenticated/raw-materials'
     | '/_authenticated/settings'
-    | '/_authenticated/suppliers-packaging'
-    | '/_authenticated/suppliers-raw'
+    | '/_authenticated/suppliers'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -210,18 +196,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/suppliers-raw': {
-      id: '/_authenticated/suppliers-raw'
-      path: '/suppliers-raw'
-      fullPath: '/suppliers-raw'
-      preLoaderRoute: typeof AuthenticatedSuppliersRawRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/suppliers-packaging': {
-      id: '/_authenticated/suppliers-packaging'
-      path: '/suppliers-packaging'
-      fullPath: '/suppliers-packaging'
-      preLoaderRoute: typeof AuthenticatedSuppliersPackagingRouteImport
+    '/_authenticated/suppliers': {
+      id: '/_authenticated/suppliers'
+      path: '/suppliers'
+      fullPath: '/suppliers'
+      preLoaderRoute: typeof AuthenticatedSuppliersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/settings': {
@@ -292,8 +271,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedProductionRoute: typeof AuthenticatedProductionRoute
   AuthenticatedRawMaterialsRoute: typeof AuthenticatedRawMaterialsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedSuppliersPackagingRoute: typeof AuthenticatedSuppliersPackagingRoute
-  AuthenticatedSuppliersRawRoute: typeof AuthenticatedSuppliersRawRoute
+  AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -305,8 +283,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedProductionRoute: AuthenticatedProductionRoute,
   AuthenticatedRawMaterialsRoute: AuthenticatedRawMaterialsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedSuppliersPackagingRoute: AuthenticatedSuppliersPackagingRoute,
-  AuthenticatedSuppliersRawRoute: AuthenticatedSuppliersRawRoute,
+  AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

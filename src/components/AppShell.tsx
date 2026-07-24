@@ -8,7 +8,6 @@ import {
   Users,
   ShoppingCart,
   Truck,
-  PackageOpen,
   Settings as SettingsIcon,
   LogOut,
   Bell,
@@ -16,7 +15,6 @@ import {
   Moon,
   Sun,
 } from "lucide-react";
-// PackageOpen removed from sidebar; suppliers unified
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useStore } from "@/lib/store";
