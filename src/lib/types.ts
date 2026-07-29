@@ -108,9 +108,42 @@ export interface Order {
 
 export interface Settings {
   products: string[];
+  finishedProducts: string[];
   packSizes: string[];
   clientTypes: ClientType[];
   theme: "light" | "dark";
+}
+
+export interface OpeningHour {
+  day: string; // Lundi..Dimanche
+  closed: boolean;
+  open: string; // "08:00"
+  close: string; // "18:00"
+}
+
+export interface ServiceOffer {
+  id: ID;
+  name: string;
+  description: string;
+}
+
+export interface SocialLink {
+  id: ID;
+  network: string;
+  url: string;
+}
+
+export interface FaqItem {
+  id: ID;
+  question: string;
+  answer: string;
+}
+
+export interface CustomerService {
+  hours: OpeningHour[];
+  services: ServiceOffer[];
+  socials: SocialLink[];
+  faq: FaqItem[];
 }
 
 export interface AppState {
@@ -122,5 +155,6 @@ export interface AppState {
   clients: Client[];
   suppliers: Supplier[];
   orders: Order[];
+  customerService: CustomerService;
   settings: Settings;
 }
