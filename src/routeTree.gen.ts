@@ -18,6 +18,7 @@ import { Route as AuthenticatedProductionRouteImport } from './routes/_authentic
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated.orders'
 import { Route as AuthenticatedFinishedRouteImport } from './routes/_authenticated.finished'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedCustomerServiceRouteImport } from './routes/_authenticated.customer-service'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated.clients'
 
 const LoginRoute = LoginRouteImport.update({
@@ -64,6 +65,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCustomerServiceRoute =
+  AuthenticatedCustomerServiceRouteImport.update({
+    id: '/customer-service',
+    path: '/customer-service',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
   id: '/clients',
   path: '/clients',
@@ -74,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/clients': typeof AuthenticatedClientsRoute
+  '/customer-service': typeof AuthenticatedCustomerServiceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/finished': typeof AuthenticatedFinishedRoute
   '/orders': typeof AuthenticatedOrdersRoute
@@ -85,6 +93,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/clients': typeof AuthenticatedClientsRoute
+  '/customer-service': typeof AuthenticatedCustomerServiceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/finished': typeof AuthenticatedFinishedRoute
   '/orders': typeof AuthenticatedOrdersRoute
@@ -98,6 +107,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/clients': typeof AuthenticatedClientsRoute
+  '/_authenticated/customer-service': typeof AuthenticatedCustomerServiceRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/finished': typeof AuthenticatedFinishedRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/clients'
+    | '/customer-service'
     | '/dashboard'
     | '/finished'
     | '/orders'
@@ -122,6 +133,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/clients'
+    | '/customer-service'
     | '/dashboard'
     | '/finished'
     | '/orders'
@@ -134,6 +146,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/_authenticated/clients'
+    | '/_authenticated/customer-service'
     | '/_authenticated/dashboard'
     | '/_authenticated/finished'
     | '/_authenticated/orders'
@@ -213,6 +226,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/customer-service': {
+      id: '/_authenticated/customer-service'
+      path: '/customer-service'
+      fullPath: '/customer-service'
+      preLoaderRoute: typeof AuthenticatedCustomerServiceRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/clients': {
       id: '/_authenticated/clients'
       path: '/clients'
@@ -225,6 +245,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedClientsRoute: typeof AuthenticatedClientsRoute
+  AuthenticatedCustomerServiceRoute: typeof AuthenticatedCustomerServiceRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFinishedRoute: typeof AuthenticatedFinishedRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
@@ -235,6 +256,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedClientsRoute: AuthenticatedClientsRoute,
+  AuthenticatedCustomerServiceRoute: AuthenticatedCustomerServiceRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFinishedRoute: AuthenticatedFinishedRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,

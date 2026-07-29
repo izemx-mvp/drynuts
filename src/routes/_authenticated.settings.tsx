@@ -28,6 +28,7 @@ function SettingsPage() {
   const { state, update, reset } = useStore();
   const { user } = useAuth();
   const [newProduct, setNewProduct] = useState("");
+  const [newFinished, setNewFinished] = useState("");
   const [newSize, setNewSize] = useState("");
   const [newType, setNewType] = useState("");
 
@@ -43,6 +44,26 @@ function SettingsPage() {
     update((s) => ({
       ...s,
       settings: { ...s.settings, products: s.settings.products.filter((x) => x !== p) },
+    }));
+
+  const addFinished = () => {
+    if (!newFinished.trim()) return;
+    update((s) => ({
+      ...s,
+      settings: {
+        ...s.settings,
+        finishedProducts: [...s.settings.finishedProducts, newFinished.trim()],
+      },
+    }));
+    setNewFinished("");
+  };
+  const removeFinished = (p: string) =>
+    update((s) => ({
+      ...s,
+      settings: {
+        ...s.settings,
+        finishedProducts: s.settings.finishedProducts.filter((x) => x !== p),
+      },
     }));
 
   const addSize = () => {
@@ -99,6 +120,33 @@ function SettingsPage() {
           <div className="flex gap-2">
             <Input value={newProduct} onChange={(e) => setNewProduct(e.target.value)} placeholder="Ex: Noisettes" />
             <Button onClick={addProduct}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <h3 className="font-semibold mb-1">Types de produits finis</h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Produits transformés vendables (peuvent différer de la matière première).
+          </p>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {state.settings.finishedProducts.map((p) => (
+              <Badge key={p} variant="secondary" className="gap-1 py-1">
+                {p}
+                <button onClick={() => removeFinished(p)}>
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input
+              value={newFinished}
+              onChange={(e) => setNewFinished(e.target.value)}
+              placeholder="Ex: Cheese Nuts"
+            />
+            <Button onClick={addFinished}>
               <Plus className="h-4 w-4" />
             </Button>
           </div>
