@@ -18,7 +18,19 @@ function loadInitial(): AppState {
   if (typeof window === "undefined") return initialState;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as AppState;
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<AppState>;
+      // merge with defaults so newly added modules/settings always exist
+      return {
+        ...initialState,
+        ...parsed,
+        customerService: {
+          ...initialState.customerService,
+          ...(parsed.customerService ?? {}),
+        },
+        settings: { ...initialState.settings, ...(parsed.settings ?? {}) },
+      } as AppState;
+    }
   } catch {
     /* ignore */
   }

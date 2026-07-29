@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useStore } from "@/lib/store";
 import { PageHeader } from "@/components/PageHeader";
@@ -93,11 +93,11 @@ function Dashboard() {
     .slice(0, 5);
 
   const kpiCards = [
-    { label: "Stock matière première", value: `${kpis.rawTotal.toLocaleString("fr-FR")} kg`, icon: Wheat, color: "bg-primary/10 text-primary" },
-    { label: "Stock emballage", value: `${kpis.pkgTotal} rouleaux`, icon: Package, color: "bg-accent/20 text-accent-foreground" },
-    { label: "Ateliers actifs", value: `${kpis.activeWorkshops}/${state.workshops.length}`, icon: Factory, color: "bg-info/10 text-info" },
-    { label: "Produits finis", value: `${kpis.finishedUnits.toLocaleString("fr-FR")} u.`, icon: Boxes, color: "bg-success/10 text-success" },
-    { label: "Commandes du jour", value: `${kpis.todayOrders}`, icon: ShoppingCart, color: "bg-warning/10 text-warning" },
+    { label: "Stock matière première", value: `${kpis.rawTotal.toLocaleString("fr-FR")} kg`, icon: Wheat, color: "bg-primary/10 text-primary", to: "/production" as const, search: { tab: "raw" as const } },
+    { label: "Stock emballage", value: `${kpis.pkgTotal} rouleaux`, icon: Package, color: "bg-accent/20 text-accent-foreground", to: "/production" as const, search: { tab: "packaging" as const } },
+    { label: "Ateliers actifs", value: `${kpis.activeWorkshops}/${state.workshops.length}`, icon: Factory, color: "bg-info/10 text-info", to: "/production" as const, search: { tab: "workshops" as const } },
+    { label: "Produits finis", value: `${kpis.finishedUnits.toLocaleString("fr-FR")} u.`, icon: Boxes, color: "bg-success/10 text-success", to: "/finished" as const },
+    { label: "Commandes du jour", value: `${kpis.todayOrders}`, icon: ShoppingCart, color: "bg-warning/10 text-warning", to: "/orders" as const },
     { label: "CA du mois", value: `${(kpis.monthRevenue / 1000).toFixed(1)}k MAD`, icon: TrendingUp, color: "bg-primary/10 text-primary" },
   ];
 
@@ -106,15 +106,30 @@ function Dashboard() {
       <PageHeader title="Dashboard" subtitle="Vue temps réel de votre activité de transformation" />
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-        {kpiCards.map((k) => (
-          <Card key={k.label} className="p-4">
-            <div className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${k.color}`}>
-              <k.icon className="h-4 w-4" />
-            </div>
-            <div className="mt-3 text-2xl font-bold tracking-tight">{k.value}</div>
-            <div className="text-xs text-muted-foreground mt-1">{k.label}</div>
-          </Card>
-        ))}
+        {kpiCards.map((k) => {
+          const card = (
+            <Card
+              className={`p-4 h-full ${"to" in k && k.to ? "hover:border-primary/50 hover:shadow-sm transition cursor-pointer" : ""}`}
+            >
+              <div className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${k.color}`}>
+                <k.icon className="h-4 w-4" />
+              </div>
+              <div className="mt-3 text-2xl font-bold tracking-tight">{k.value}</div>
+              <div className="text-xs text-muted-foreground mt-1">{k.label}</div>
+            </Card>
+          );
+          const target = "to" in k ? k.to : undefined;
+          if (!target) return <div key={k.label}>{card}</div>;
+          return (
+            <Link
+              key={k.label}
+              to={target}
+              search={("search" in k ? k.search : undefined) as never}
+            >
+              {card}
+            </Link>
+          );
+        })}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6 mb-6">
