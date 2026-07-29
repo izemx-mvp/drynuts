@@ -21,6 +21,7 @@ const finishedProducts = [
   "Honey Nuts",
   "Spicy Mix",
   "Mélange apéritif",
+  "Pistaches grillées",
   "Dattes fourrées",
   "Autres",
 ];
@@ -104,29 +105,29 @@ const tasks = [
 ];
 
 const finished = [
-  { id: uid("fin", 1), product: "Amandes", packSize: "250g", packType: "standard" as const, units: 820, producedAt: iso(1) },
-  { id: uid("fin", 2), product: "Amandes", packSize: "500g", packType: "standard" as const, units: 410, producedAt: iso(2) },
-  { id: uid("fin", 3), product: "Noix", packSize: "250g", packType: "standard" as const, units: 300, producedAt: iso(3) },
-  { id: uid("fin", 4), product: "Cacahuètes", packSize: "100g", packType: "standard" as const, units: 1500, producedAt: iso(1) },
-  { id: uid("fin", 5), product: "Cacahuètes", packSize: "500g", packType: "standard" as const, units: 640, producedAt: iso(4) },
-  { id: uid("fin", 6), product: "Pistaches", packSize: "250g", packType: "standard" as const, units: 210, producedAt: iso(2) },
-  { id: uid("fin", 7), product: "Noix de cajou", packSize: "250g", packType: "standard" as const, units: 380, producedAt: iso(5) },
-  { id: uid("fin", 8), product: "Raisins secs", packSize: "500g", packType: "standard" as const, units: 260, producedAt: iso(3) },
-  { id: uid("fin", 9), product: "Dattes", packSize: "1kg", packType: "standard" as const, units: 180, producedAt: iso(6) },
-  { id: uid("fin", 10), product: "Figues séchées", packSize: "250g", packType: "standard" as const, units: 140, producedAt: iso(7) },
+  { id: uid("fin", 1), product: "Amandes nature", packSize: "250g", packType: "standard" as const, units: 820, producedAt: iso(1) },
+  { id: uid("fin", 2), product: "Amandes nature", packSize: "500g", packType: "standard" as const, units: 410, producedAt: iso(2) },
+  { id: uid("fin", 3), product: "Mélange apéritif", packSize: "250g", packType: "standard" as const, units: 300, producedAt: iso(3) },
+  { id: uid("fin", 4), product: "Cheese Nuts", packSize: "100g", packType: "standard" as const, units: 1500, producedAt: iso(1) },
+  { id: uid("fin", 5), product: "Cheese Nuts", packSize: "500g", packType: "standard" as const, units: 640, producedAt: iso(4) },
+  { id: uid("fin", 6), product: "Pistaches grillées", packSize: "250g", packType: "standard" as const, units: 210, producedAt: iso(2) },
+  { id: uid("fin", 7), product: "Noix de cajou nature", packSize: "250g", packType: "standard" as const, units: 380, producedAt: iso(5) },
+  { id: uid("fin", 8), product: "Honey Nuts", packSize: "500g", packType: "standard" as const, units: 260, producedAt: iso(3) },
+  { id: uid("fin", 9), product: "Dattes fourrées", packSize: "1kg", packType: "standard" as const, units: 180, producedAt: iso(6) },
+  { id: uid("fin", 10), product: "Spicy Mix", packSize: "250g", packType: "standard" as const, units: 140, producedAt: iso(7) },
   // custom stock reserved for BIM
-  { id: uid("fin", 11), product: "Amandes", packSize: "250g", packType: "custom" as const, clientId: "cli-001", units: 900, producedAt: iso(2) },
-  { id: uid("fin", 12), product: "Cacahuètes", packSize: "500g", packType: "custom" as const, clientId: "cli-001", units: 1200, producedAt: iso(1) },
-  { id: uid("fin", 13), product: "Noix de cajou", packSize: "250g", packType: "custom" as const, clientId: "cli-001", units: 340, producedAt: iso(3) },
+  { id: uid("fin", 11), product: "Amandes nature", packSize: "250g", packType: "custom" as const, clientId: "cli-001", units: 900, producedAt: iso(2) },
+  { id: uid("fin", 12), product: "Cheese Nuts", packSize: "500g", packType: "custom" as const, clientId: "cli-001", units: 1200, producedAt: iso(1) },
+  { id: uid("fin", 13), product: "Noix de cajou nature", packSize: "250g", packType: "custom" as const, clientId: "cli-001", units: 340, producedAt: iso(3) },
   // custom stock reserved for Marjane
-  { id: uid("fin", 14), product: "Pistaches", packSize: "250g", packType: "custom" as const, clientId: "cli-002", units: 500, producedAt: iso(2) },
-  { id: uid("fin", 15), product: "Amandes", packSize: "1kg", packType: "custom" as const, clientId: "cli-002", units: 220, producedAt: iso(4) },
-  { id: uid("fin", 16), product: "Dattes", packSize: "500g", packType: "custom" as const, clientId: "cli-002", units: 310, producedAt: iso(1) },
+  { id: uid("fin", 14), product: "Pistaches grillées", packSize: "250g", packType: "custom" as const, clientId: "cli-002", units: 500, producedAt: iso(2) },
+  { id: uid("fin", 15), product: "Amandes nature", packSize: "1kg", packType: "custom" as const, clientId: "cli-002", units: 220, producedAt: iso(4) },
+  { id: uid("fin", 16), product: "Dattes fourrées", packSize: "500g", packType: "custom" as const, clientId: "cli-002", units: 310, producedAt: iso(1) },
   // Duty Free
-  { id: uid("fin", 17), product: "Noix de cajou", packSize: "100g", packType: "custom" as const, clientId: "cli-003", units: 600, producedAt: iso(3) },
-  { id: uid("fin", 18), product: "Amandes", packSize: "100g", packType: "custom" as const, clientId: "cli-003", units: 480, producedAt: iso(5) },
-  { id: uid("fin", 19), product: "Pistaches", packSize: "500g", packType: "standard" as const, units: 90, producedAt: iso(8) },
-  { id: uid("fin", 20), product: "Noix", packSize: "1kg", packType: "standard" as const, units: 60, producedAt: iso(9) },
+  { id: uid("fin", 17), product: "Noix de cajou nature", packSize: "100g", packType: "custom" as const, clientId: "cli-003", units: 600, producedAt: iso(3) },
+  { id: uid("fin", 18), product: "Amandes nature", packSize: "100g", packType: "custom" as const, clientId: "cli-003", units: 480, producedAt: iso(5) },
+  { id: uid("fin", 19), product: "Pistaches grillées", packSize: "500g", packType: "standard" as const, units: 90, producedAt: iso(8) },
+  { id: uid("fin", 20), product: "Mélange apéritif", packSize: "1kg", packType: "standard" as const, units: 60, producedAt: iso(9) },
 ];
 
 const orderStatuses = ["pending", "validated", "delivered", "cancelled"] as const;
