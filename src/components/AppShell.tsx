@@ -1,8 +1,7 @@
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
-  Wheat,
-  Package,
+  Headphones,
   Factory,
   Boxes,
   Users,
@@ -35,13 +34,12 @@ import { cn } from "@/lib/utils";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/raw-materials", label: "Matière première", icon: Wheat },
-  { to: "/packaging", label: "Emballage", icon: Package },
-  { to: "/production", label: "Ateliers / Production", icon: Factory },
+  { to: "/production", label: "Production", icon: Factory },
   { to: "/finished", label: "Produits finis", icon: Boxes },
   { to: "/clients", label: "Clients", icon: Users },
   { to: "/orders", label: "Ventes / Commandes", icon: ShoppingCart },
   { to: "/suppliers", label: "Fournisseurs", icon: Truck },
+  { to: "/customer-service", label: "Service Client", icon: Headphones },
   { to: "/settings", label: "Paramètres", icon: SettingsIcon },
 ] as const;
 
