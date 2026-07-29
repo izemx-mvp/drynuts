@@ -13,6 +13,18 @@ const products = [
   "Dattes",
 ];
 
+const finishedProducts = [
+  "Amandes nature",
+  "Amandes grillées salées",
+  "Noix de cajou nature",
+  "Cheese Nuts",
+  "Honey Nuts",
+  "Spicy Mix",
+  "Mélange apéritif",
+  "Dattes fourrées",
+  "Autres",
+];
+
 const packSizes = ["100g", "250g", "500g", "1kg", "2kg"];
 
 const clientTypes: ClientType[] = [
@@ -139,6 +151,35 @@ const orders = [
   { clientId: "cli-010", items: [{ product: "Noix", packSize: "1kg", units: 40, unitPrice: 120 }], status: "validated" },
 ];
 
+const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+
+const customerService = {
+  hours: days.map((day) => ({
+    day,
+    closed: day === "Dimanche",
+    open: day === "Samedi" ? "09:00" : "08:00",
+    close: day === "Samedi" ? "13:00" : "18:00",
+  })),
+  services: [
+    { id: "srv-001", name: "Vente en gros", description: "Fruits secs conditionnés en grandes quantités pour grossistes et distributeurs." },
+    { id: "srv-002", name: "Marque blanche / emballage personnalisé", description: "Production sous votre marque avec bobines d'emballage à votre identité visuelle." },
+    { id: "srv-003", name: "Livraison B2B", description: "Livraison sur tout le Maroc pour les commandes professionnelles validées." },
+    { id: "srv-004", name: "Torréfaction à façon", description: "Torréfaction et aromatisation (Cheese, Honey, Spicy) selon votre cahier des charges." },
+  ],
+  socials: [
+    { id: "soc-001", network: "Facebook", url: "https://facebook.com/drynuts.ma" },
+    { id: "soc-002", network: "Instagram", url: "https://instagram.com/drynuts.ma" },
+    { id: "soc-003", network: "LinkedIn", url: "https://linkedin.com/company/drynuts" },
+    { id: "soc-004", network: "WhatsApp Business", url: "https://wa.me/212600000000" },
+  ],
+  faq: [
+    { id: "faq-001", question: "Quelle est la quantité minimale de commande ?", answer: "La commande minimale est de 50 unités pour le stock standard et de 200 unités pour un emballage personnalisé." },
+    { id: "faq-002", question: "Proposez-vous des emballages à notre marque ?", answer: "Oui, nous produisons en marque blanche : vos bobines personnalisées sont réservées à votre stock et ne sont jamais utilisées pour un autre client." },
+    { id: "faq-003", question: "Quels sont les délais de livraison ?", answer: "Comptez 48 à 72h après validation de la commande pour l'axe Casablanca-Rabat, 3 à 5 jours pour le reste du Maroc." },
+    { id: "faq-004", question: "Quels moyens de paiement acceptez-vous ?", answer: "Virement bancaire, chèque et espèces à la livraison pour les clients référencés." },
+  ],
+};
+
 export const initialState: AppState = {
   rawMaterials,
   packaging,
@@ -165,8 +206,10 @@ export const initialState: AppState = {
       createdAt: iso(i),
     };
   }),
+  customerService,
   settings: {
     products,
+    finishedProducts,
     packSizes,
     clientTypes,
     theme: "light",
