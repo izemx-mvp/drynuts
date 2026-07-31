@@ -1,7 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useStore, genId } from "@/lib/store";
-import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,26 +55,6 @@ import {
   rollsFor,
 } from "@/lib/pipeline";
 
-export const Route = createFileRoute("/_authenticated/orders")({
-  head: () => ({
-    meta: [
-      { title: "Ventes / Commandes — DryNuts" },
-      {
-        name: "description",
-        content:
-          "Pipeline commercial DryNuts : de la commande client à la production puis à la livraison.",
-      },
-      { property: "og:title", content: "Ventes / Commandes — DryNuts" },
-      {
-        property: "og:description",
-        content: "Pipeline automatisé commande → production → prête → livrée.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
-  component: OrdersPage,
-});
 
 const statusMeta: Record<OrderStatus, { label: string; cn: string }> = {
   pending: { label: "Reçue", cn: "border-muted-foreground text-muted-foreground" },
@@ -93,7 +71,7 @@ const pipelineSteps: { key: OrderStatus; label: string; icon: typeof ShoppingCar
   { key: "delivered", label: "Livrée", icon: Truck },
 ];
 
-function OrdersPage() {
+export function OrdersPanel() {
   const { state, update } = useStore();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<string>("all");
@@ -213,32 +191,6 @@ function OrdersPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Ventes / Commandes"
-        subtitle="Pipeline automatisé : commande → production → prête → livraison"
-        actions={
-          <Dialog open={openNew} onOpenChange={setOpenNew}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-1" /> Nouvelle commande
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Nouvelle commande</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-2">
-                <div className="space-y-1.5">
-                  <Label>Client</Label>
-                  <Select
-                    value={clientId}
-                    onValueChange={(v) => {
-                      setClientId(v);
-                      setItems([]);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner un client…" />
                     </SelectTrigger>
                     <SelectContent>
                       {state.clients.map((c) => (

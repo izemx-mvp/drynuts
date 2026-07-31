@@ -1,26 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useStore } from "@/lib/store";
-import { PageHeader } from "@/components/PageHeader";
 import { CrudTable } from "@/components/CrudTable";
 import { Badge } from "@/components/ui/badge";
 import type { Client } from "@/lib/types";
 
-export const Route = createFileRoute("/_authenticated/clients")({
-  head: () => ({
-    meta: [
-      { title: "Clients — DryNuts" },
-      { name: "description", content: "Gestion des clients B2B : grossistes, détaillants, GMS." },
-    ],
-  }),
-  component: ClientsPage,
-});
 
-function ClientsPage() {
+export function ClientsPanel() {
   const { state, update } = useStore();
 
   return (
     <div>
-      <PageHeader title="Clients" subtitle="Grossistes, détaillants, points de vente et grandes surfaces" />
       <CrudTable<Client>
         data={state.clients}
         columns={[

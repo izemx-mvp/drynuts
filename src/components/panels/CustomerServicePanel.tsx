@@ -1,7 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, genId } from "@/lib/store";
-import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -31,30 +29,13 @@ import {
 import { toast } from "sonner";
 import type { FaqItem, ServiceOffer, SocialLink } from "@/lib/types";
 
-export const Route = createFileRoute("/_authenticated/customer-service")({
-  head: () => ({
-    meta: [
-      { title: "Service Client — DryNuts" },
-      {
-        name: "description",
-        content:
-          "Horaires, services, réseaux sociaux et FAQ du service client DryNuts.",
-      },
-    ],
-  }),
-  component: CustomerServicePage,
-});
 
-function CustomerServicePage() {
+export function CustomerServicePanel() {
   const { state, update } = useStore();
   const cs = state.customerService;
 
   return (
     <div>
-      <PageHeader
-        title="Service Client"
-        subtitle="Informations publiques de l'entreprise"
-      />
 
       <Tabs defaultValue="hours">
         <TabsList className="mb-4 flex-wrap">

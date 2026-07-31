@@ -1,7 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
-import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -25,20 +23,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import type { FinishedProduct } from "@/lib/types";
 
-export const Route = createFileRoute("/_authenticated/finished")({
-  head: () => ({
-    meta: [
-      { title: "Produits finis — DryNuts" },
-      {
-        name: "description",
-        content: "Stock produits finis : stock commun standard et stock réservé par client.",
-      },
-    ],
-  }),
-  component: FinishedPage,
-});
 
-function FinishedPage() {
+export function FinishedPanel() {
   const { state, update } = useStore();
   const [q, setQ] = useState("");
   const [product, setProduct] = useState<string>("all");
@@ -147,10 +133,6 @@ function FinishedPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Stock produits finis"
-        subtitle="Stock commun (standard) et stock réservé par client (emballage personnalisé)"
-      />
 
       <Card className="p-4 mb-6 flex flex-col md:flex-row md:items-center gap-3">
         <div className="relative flex-1 max-w-sm">
