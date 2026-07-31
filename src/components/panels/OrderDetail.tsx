@@ -35,9 +35,22 @@ import {
   Ban,
   FileText,
   Zap,
+  Plus,
+  Play,
+  CheckCircle2,
 } from "lucide-react";
 import type { Order, OrderStatus } from "@/lib/types";
-import { availableUnits, rawOf } from "@/lib/pipeline";
+import {
+  availableUnits,
+  rawOf,
+  addTask,
+  finishTask,
+  pickWorkshop,
+  feasibility,
+  rawKgFor,
+  rollsFor,
+  packTypeForClient,
+} from "@/lib/pipeline";
 
 export const ORDER_FLOW: {
   key: OrderStatus;
