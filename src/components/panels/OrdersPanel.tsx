@@ -191,6 +191,27 @@ export function OrdersPanel() {
 
   return (
     <div>
+      <div className="flex justify-end mb-4">
+          <Dialog open={openNew} onOpenChange={setOpenNew}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-1" /> Nouvelle commande
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Nouvelle commande</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-2">
+                <div className="space-y-1.5">
+                  <Label>Client</Label>
+                  <Select
+                    value={clientId}
+                    onValueChange={(v) => {
+                      setClientId(v);
+                      setItems([]);
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner un client…" />
                     </SelectTrigger>
@@ -333,8 +354,7 @@ export function OrdersPanel() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        }
-      />
+      </div>
 
       {/* Pipeline overview */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
