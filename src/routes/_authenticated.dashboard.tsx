@@ -96,8 +96,8 @@ function Dashboard() {
     { label: "Stock matière première", value: `${kpis.rawTotal.toLocaleString("fr-FR")} kg`, icon: Wheat, color: "bg-primary/10 text-primary", to: "/production" as const, search: { tab: "raw" as const } },
     { label: "Stock emballage", value: `${kpis.pkgTotal} rouleaux`, icon: Package, color: "bg-accent/20 text-accent-foreground", to: "/production" as const, search: { tab: "packaging" as const } },
     { label: "Ateliers actifs", value: `${kpis.activeWorkshops}/${state.workshops.length}`, icon: Factory, color: "bg-info/10 text-info", to: "/production" as const, search: { tab: "workshops" as const } },
-    { label: "Produits finis", value: `${kpis.finishedUnits.toLocaleString("fr-FR")} u.`, icon: Boxes, color: "bg-success/10 text-success", to: "/finished" as const },
-    { label: "Commandes du jour", value: `${kpis.todayOrders}`, icon: ShoppingCart, color: "bg-warning/10 text-warning", to: "/orders" as const },
+    { label: "Produits finis", value: `${kpis.finishedUnits.toLocaleString("fr-FR")} u.`, icon: Boxes, color: "bg-success/10 text-success", to: "/production" as const, search: { tab: "finished" as const } },
+    { label: "Commandes du jour", value: `${kpis.todayOrders}`, icon: ShoppingCart, color: "bg-warning/10 text-warning", to: "/commercial" as const, search: { tab: "orders" as const } },
     { label: "CA du mois", value: `${(kpis.monthRevenue / 1000).toFixed(1)}k MAD`, icon: TrendingUp, color: "bg-primary/10 text-primary" },
   ];
 
