@@ -227,6 +227,8 @@ export const initialState: AppState = {
     finishedProducts,
     packSizes,
     clientTypes,
+    recipes,
+
     theme: "light",
   },
 };
