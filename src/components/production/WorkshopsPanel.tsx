@@ -31,9 +31,14 @@ import {
   Trash2,
   ListOrdered,
   Eye,
+  AlertTriangle,
+  Wheat,
+  Package,
+  ShoppingCart,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { ProductionTask, Workshop, WorkshopStatus } from "@/lib/types";
+import { addTask, feasibility, finishTask as finishTaskState } from "@/lib/pipeline";
 
 const statusStyle: Record<WorkshopStatus, { label: string; cn: string }> = {
   idle: { label: "Libre", cn: "border-success text-success" },
@@ -48,8 +53,8 @@ export function WorkshopsPanel() {
   const [taskOpen, setTaskOpen] = useState(false);
   const [taskForm, setTaskForm] = useState({
     workshopId: "",
-    product: "",
-    quantityKg: 100,
+    finishedProduct: "",
+    units: 500,
     packSize: "250g",
     packType: "standard" as "standard" | "custom",
     clientId: "",
@@ -63,10 +68,21 @@ export function WorkshopsPanel() {
   });
 
   const [detail, setDetail] = useState<{ workshop: Workshop; task: ProductionTask } | null>(null);
-  const [finishing, setFinishing] = useState<{ workshop: Workshop; task: ProductionTask } | null>(
-    null,
+
+  const need = useMemo(
+    () =>
+      taskForm.finishedProduct
+        ? feasibility(
+            state,
+            taskForm.finishedProduct,
+            Number(taskForm.units) || 0,
+            taskForm.packSize,
+            taskForm.packType,
+            taskForm.clientId || undefined,
+          )
+        : null,
+    [state, taskForm],
   );
-  const [finishedType, setFinishedType] = useState("");
 
   const openNewWorkshop = () => {
     setWsEditing(null);
@@ -109,8 +125,8 @@ export function WorkshopsPanel() {
   };
 
   const submitTask = () => {
-    if (!taskForm.workshopId || !taskForm.product) {
-      toast.error("Sélectionnez un atelier et un produit.");
+    if (!taskForm.workshopId || !taskForm.finishedProduct) {
+      toast.error("Sélectionnez un atelier et un produit final.");
       return;
     }
     const workshop = state.workshops.find((w) => w.id === taskForm.workshopId);
@@ -123,31 +139,23 @@ export function WorkshopsPanel() {
       toast.error("Sélectionnez un client pour l'emballage personnalisé.");
       return;
     }
+    if (Number(taskForm.units) <= 0) {
+      toast.error("Indiquez le nombre de paquets à produire.");
+      return;
+    }
     const busy =
       workshop.status === "running" || workshop.status === "paused" || !!workshop.currentTaskId;
-    const task: ProductionTask = {
-      id: genId("task"),
-      workshopId: taskForm.workshopId,
-      product: taskForm.product,
-      quantityKg: Number(taskForm.quantityKg),
-      packSize: taskForm.packSize,
-      packType: taskForm.packType,
-      clientId: taskForm.packType === "custom" ? taskForm.clientId : undefined,
-      status: busy ? "queued" : "running",
-      progress: busy ? 0 : 50,
-      createdAt: new Date().toISOString(),
-      startedAt: busy ? undefined : new Date().toISOString(),
-    };
-    update((s) => ({
-      ...s,
-      tasks: [task, ...s.tasks],
-      workshops: busy
-        ? s.workshops
-        : s.workshops.map((w) =>
-            w.id === taskForm.workshopId ? { ...w, status: "running", currentTaskId: task.id } : w,
-          ),
-    }));
-    toast.success(busy ? "Ajouté à la file d'attente" : "Tâche démarrée");
+    update((s) =>
+      addTask(s, {
+        workshopId: taskForm.workshopId,
+        finishedProduct: taskForm.finishedProduct,
+        units: Number(taskForm.units),
+        packSize: taskForm.packSize,
+        packType: taskForm.packType,
+        clientId: taskForm.packType === "custom" ? taskForm.clientId : undefined,
+      }),
+    );
+    toast.success(busy ? "Ajouté à la file d'attente" : "Production démarrée");
     setTaskOpen(false);
   };
 
@@ -157,95 +165,12 @@ export function WorkshopsPanel() {
       workshops: s.workshops.map((w) => (w.id === workshopId ? { ...w, status: target } : w)),
     }));
 
-  const openFinish = (workshop: Workshop, task: ProductionTask) => {
-    setFinishing({ workshop, task });
-    const guess =
-      state.settings.finishedProducts.find((p) => p.startsWith(task.product)) ??
-      state.settings.finishedProducts[0] ??
-      task.product;
-    setFinishedType(guess);
-  };
-
-  // ---------- finish task: deduct raw + packaging, add finished, promote queue ----------
-  const finishTask = (workshopId: string, taskId: string, finishedProductType: string) => {
-    update((s) => {
-      const task = s.tasks.find((t) => t.id === taskId);
-      if (!task) return s;
-
-      // deduct raw material (FIFO by receivedAt asc)
-      let remaining = task.quantityKg;
-      const rawMaterials = [...s.rawMaterials]
-        .sort((a, b) => (a.receivedAt < b.receivedAt ? -1 : 1))
-        .map((r) => {
-          if (remaining <= 0 || r.product !== task.product) return r;
-          const take = Math.min(r.quantityKg, remaining);
-          remaining -= take;
-          return { ...r, quantityKg: r.quantityKg - take };
-        });
-
-      // deduct 1 roll of matching packaging
-      let deducted = false;
-      const packaging = s.packaging.map((p) => {
-        if (deducted) return p;
-        const matchType = p.type === task.packType;
-        const matchClient = task.packType === "custom" ? p.clientId === task.clientId : true;
-        if (matchType && matchClient && p.size === task.packSize && p.quantityRolls > 0) {
-          deducted = true;
-          return { ...p, quantityRolls: p.quantityRolls - 1 };
-        }
-        return p;
-      });
-
-      const gramsPerPack = task.packSize.includes("kg")
-        ? parseFloat(task.packSize) * 1000
-        : parseFloat(task.packSize);
-      const units = Math.max(1, Math.floor((task.quantityKg * 1000) / (gramsPerPack || 250)));
-
-      const newFinished = {
-        id: `fin-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        product: finishedProductType || task.product,
-        packSize: task.packSize,
-        packType: task.packType,
-        clientId: task.clientId,
-        units,
-        producedAt: new Date().toISOString(),
-      };
-
-      const nextTask = s.tasks.find(
-        (x) => x.workshopId === workshopId && x.status === "queued" && x.id !== taskId,
-      );
-      const tasks = s.tasks.map((t) => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            status: "done" as const,
-            progress: 100,
-            finishedAt: new Date().toISOString(),
-          };
-        }
-        if (nextTask && t.id === nextTask.id) {
-          return {
-            ...t,
-            status: "running" as const,
-            progress: 50,
-            startedAt: new Date().toISOString(),
-          };
-        }
-        return t;
-      });
-      const workshops = s.workshops.map((w) =>
-        w.id === workshopId
-          ? {
-              ...w,
-              currentTaskId: nextTask?.id,
-              status: nextTask ? ("running" as const) : ("idle" as const),
-            }
-          : w,
-      );
-
-      return { ...s, rawMaterials, packaging, finished: [newFinished, ...s.finished], tasks, workshops };
-    });
-    toast.success("Tâche terminée — produit fini créé, stocks mis à jour");
+  const finish = (task: ProductionTask) => {
+    update((s) => finishTaskState(s, task.id));
+    setDetail(null);
+    toast.success(
+      `${task.units} paquets de ${task.finishedProduct} ajoutés — matière et emballage déduits`,
+    );
   };
 
   const queueByWorkshop = useMemo(() => {
@@ -266,12 +191,12 @@ export function WorkshopsPanel() {
         <Dialog open={taskOpen} onOpenChange={setTaskOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="h-4 w-4 mr-1" /> Nouvelle tâche
+              <Plus className="h-4 w-4 mr-1" /> Nouvelle production
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Assigner une tâche de production</DialogTitle>
+              <DialogTitle>Lancer une production</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-2">
               <div className="space-y-1.5">
@@ -302,16 +227,16 @@ export function WorkshopsPanel() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Fruit sec</Label>
+                  <Label>Produit final à fabriquer</Label>
                   <Select
-                    value={taskForm.product}
-                    onValueChange={(v) => setTaskForm({ ...taskForm, product: v })}
+                    value={taskForm.finishedProduct}
+                    onValueChange={(v) => setTaskForm({ ...taskForm, finishedProduct: v })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner…" />
                     </SelectTrigger>
                     <SelectContent>
-                      {state.settings.products.map((p) => (
+                      {state.settings.finishedProducts.map((p) => (
                         <SelectItem key={p} value={p}>
                           {p}
                         </SelectItem>
@@ -320,13 +245,12 @@ export function WorkshopsPanel() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Quantité (kg)</Label>
+                  <Label>Nombre de paquets</Label>
                   <Input
                     type="number"
-                    value={taskForm.quantityKg}
-                    onChange={(e) =>
-                      setTaskForm({ ...taskForm, quantityKg: Number(e.target.value) })
-                    }
+                    min={1}
+                    value={taskForm.units}
+                    onChange={(e) => setTaskForm({ ...taskForm, units: Number(e.target.value) })}
                   />
                 </div>
               </div>
@@ -387,12 +311,55 @@ export function WorkshopsPanel() {
                   </Select>
                 </div>
               )}
+
+              {need && (
+                <div className="rounded-lg border p-3 bg-muted/30 space-y-2">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Besoins estimés avant lancement
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      <Wheat className="h-4 w-4 text-primary" /> {need.rawProduct}
+                    </span>
+                    <span
+                      className={
+                        need.rawAvailableKg >= need.rawNeededKg
+                          ? "text-success font-medium"
+                          : "text-destructive font-medium"
+                      }
+                    >
+                      {need.rawNeededKg.toLocaleString("fr-FR")} kg / {need.rawAvailableKg.toLocaleString("fr-FR")} kg dispo
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2">
+                      <Package className="h-4 w-4 text-primary" /> Emballage {taskForm.packSize}
+                    </span>
+                    <span
+                      className={
+                        need.rollsAvailable >= need.rollsNeeded
+                          ? "text-success font-medium"
+                          : "text-destructive font-medium"
+                      }
+                    >
+                      {need.rollsNeeded} / {need.rollsAvailable} rouleaux dispo
+                    </span>
+                  </div>
+                  {!need.ok && (
+                    <div className="flex items-start gap-2 text-xs text-destructive">
+                      <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      Stock insuffisant : la production peut être lancée mais devra être
+                      réapprovisionnée avant clôture.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setTaskOpen(false)}>
                 Annuler
               </Button>
-              <Button onClick={submitTask}>Assigner</Button>
+              <Button onClick={submitTask}>Lancer</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -441,11 +408,11 @@ export function WorkshopsPanel() {
               {task && (w.status === "running" || w.status === "paused") ? (
                 <div className="rounded-lg border p-3 bg-muted/30">
                   <div className="text-sm">
-                    <span className="font-medium">{task.product}</span>{" "}
-                    <span className="text-muted-foreground">· {task.quantityKg} kg</span>
+                    <span className="font-medium">{task.finishedProduct}</span>{" "}
+                    <span className="text-muted-foreground">· {task.units} paquets</span>
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
-                    Emballage {task.packSize} ·{" "}
+                    {task.quantityKg} kg de {task.product} · emballage {task.packSize} ·{" "}
                     {task.packType === "custom" ? (
                       <span className="text-info">
                         Personnalisé {client ? `— ${client.name}` : ""}
@@ -454,8 +421,16 @@ export function WorkshopsPanel() {
                       "Standard"
                     )}
                   </div>
+                  {task.orderId && (
+                    <div className="mt-1.5">
+                      <Badge variant="outline" className="text-[10px] border-info text-info">
+                        <ShoppingCart className="h-2.5 w-2.5 mr-1" /> Commande{" "}
+                        {task.orderId.slice(-6).toUpperCase()}
+                      </Badge>
+                    </div>
+                  )}
                   <div className="flex flex-wrap items-center gap-2 mt-3">
-                    <Button size="sm" onClick={() => openFinish(w, task)}>
+                    <Button size="sm" onClick={() => finish(task)}>
                       <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Terminer
                     </Button>
                     {w.status === "running" ? (
@@ -498,7 +473,7 @@ export function WorkshopsPanel() {
                         className="flex items-center justify-between text-xs bg-muted/50 rounded px-2 py-1.5"
                       >
                         <span className="truncate">
-                          {q.product} · {q.quantityKg} kg · {q.packSize}
+                          {q.finishedProduct} · {q.units} paquets · {q.packSize}
                         </span>
                         <Badge variant="outline" className="text-[10px]">
                           {q.packType === "custom" ? "Perso" : "Std"}
@@ -554,66 +529,11 @@ export function WorkshopsPanel() {
         </DialogContent>
       </Dialog>
 
-      {/* Finish task dialog — choose finished product type */}
-      <Dialog open={!!finishing} onOpenChange={(o) => !o && setFinishing(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Clôturer la tâche</DialogTitle>
-          </DialogHeader>
-          {finishing && (
-            <div className="space-y-4">
-              <div className="text-sm text-muted-foreground">
-                Matière utilisée : <span className="font-medium text-foreground">{finishing.task.product}</span> ·{" "}
-                {finishing.task.quantityKg} kg · emballage {finishing.task.packSize}{" "}
-                {finishing.task.packType === "custom" ? "personnalisé" : "standard"}
-              </div>
-              <div className="space-y-1.5">
-                <Label>Type de produit fini obtenu</Label>
-                <Select value={finishedType} onValueChange={setFinishedType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {state.settings.finishedProducts.map((p) => (
-                      <SelectItem key={p} value={p}>
-                        {p}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Le produit fini peut différer de la matière première (ex : Cacahuètes → Cheese Nuts).
-                </p>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setFinishing(null)}>
-              Annuler
-            </Button>
-            <Button
-              onClick={() => {
-                if (!finishing) return;
-                if (!finishedType) {
-                  toast.error("Sélectionnez le type de produit fini.");
-                  return;
-                }
-                finishTask(finishing.workshop.id, finishing.task.id, finishedType);
-                setFinishing(null);
-                setDetail(null);
-              }}
-            >
-              <CheckCircle2 className="h-4 w-4 mr-1" /> Confirmer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Task detail dialog */}
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Détail de la tâche</DialogTitle>
+            <DialogTitle>Détail de la production</DialogTitle>
           </DialogHeader>
           {detail &&
             (() => {
@@ -623,13 +543,17 @@ export function WorkshopsPanel() {
                 : null;
               const rows: [string, string][] = [
                 ["Atelier", workshop.name],
-                ["Produit", task.product],
-                ["Quantité", `${task.quantityKg} kg`],
+                ["Produit final", task.finishedProduct],
+                ["Quantité", `${task.units} paquets`],
+                ["Matière première", `${task.product} — ${task.quantityKg} kg`],
                 [
                   "Emballage",
                   `${task.packSize} · ${task.packType === "custom" ? "Personnalisé" : "Standard"}`,
                 ],
                 ...(client ? ([["Client", client.name]] as [string, string][]) : []),
+                ...(task.orderId
+                  ? ([["Commande", task.orderId.slice(-6).toUpperCase()]] as [string, string][])
+                  : []),
                 ["Statut", task.status],
                 ["Créée le", new Date(task.createdAt).toLocaleString("fr-FR")],
                 ...(task.startedAt
@@ -647,7 +571,7 @@ export function WorkshopsPanel() {
                     </div>
                   ))}
                   <div className="pt-3">
-                    <Button className="w-full" onClick={() => openFinish(workshop, task)}>
+                    <Button className="w-full" onClick={() => finish(task)}>
                       <CheckCircle2 className="h-4 w-4 mr-1" /> Marquer terminée
                     </Button>
                   </div>
