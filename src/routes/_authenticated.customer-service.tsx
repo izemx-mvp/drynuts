@@ -22,13 +22,12 @@ import {
   Handshake,
   Share2,
   HelpCircle,
-  Bot,
   Plus,
   Pencil,
   Trash2,
-  Send,
   ExternalLink,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import type { FaqItem, ServiceOffer, SocialLink } from "@/lib/types";
 
