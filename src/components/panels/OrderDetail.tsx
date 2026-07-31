@@ -101,12 +101,110 @@ export function OrderDetail({
   onCancel: (id: string) => void;
   onInvoice: (o: Order) => void;
 }) {
-  const { state } = useStore();
+  const { state, update } = useStore();
+  const [newProduct, setNewProduct] = useState("");
+  const [newSize, setNewSize] = useState("");
+  const [newUnits, setNewUnits] = useState("");
+  const [newWorkshop, setNewWorkshop] = useState("");
   if (!order) return null;
 
   const client = state.clients.find((c) => c.id === order.clientId);
   const tasks = state.tasks.filter((t) => t.orderId === order.id);
   const idx = flowIndex(order.status);
+
+  /** move a received order to production: create tasks for the missing quantities */
+  const launchProduction = () => {
+    let created = 0;
+    update((s) => {
+      let next = s;
+      for (const it of order.items) {
+        const have = availableUnits(next, it.product, it.packSize, it.packType, order.clientId);
+        const missing = it.units - have;
+        if (missing <= 0) continue;
+        const workshopId = pickWorkshop(next);
+        if (!workshopId) continue;
+        next = addTask(next, {
+          workshopId,
+          finishedProduct: it.product,
+          units: missing,
+          packSize: it.packSize,
+          packType: it.packType,
+          clientId: it.packType === "custom" ? order.clientId : undefined,
+          orderId: order.id,
+        });
+        created++;
+      }
+      return {
+        ...next,
+        orders: next.orders.map((o) =>
+          o.id === order.id
+            ? { ...o, status: created > 0 ? ("production" as const) : ("validated" as const) }
+            : o,
+        ),
+      };
+    });
+    toast.success(
+      created > 0
+        ? "Commande passée en production — tâches créées automatiquement"
+        : "Stock suffisant — commande prête à livrer",
+    );
+  };
+
+  const addManualTask = () => {
+    const units = parseInt(newUnits, 10);
+    if (!newProduct || !newSize || !units || units <= 0) {
+      toast.error("Produit, format et quantité sont requis.");
+      return;
+    }
+    const workshopId = newWorkshop || pickWorkshop(state);
+    if (!workshopId) {
+      toast.error("Aucun atelier disponible.");
+      return;
+    }
+    const packType = packTypeForClient(state, order.clientId, newSize);
+    update((s) => {
+      const withTask = addTask(s, {
+        workshopId,
+        finishedProduct: newProduct,
+        units,
+        packSize: newSize,
+        packType,
+        clientId: packType === "custom" ? order.clientId : undefined,
+        orderId: order.id,
+      });
+      return {
+        ...withTask,
+        orders: withTask.orders.map((o) =>
+          o.id === order.id && (o.status === "pending" || o.status === "validated")
+            ? { ...o, status: "production" as const }
+            : o,
+        ),
+      };
+    });
+    toast.success("Tâche de production créée");
+    setNewUnits("");
+  };
+
+  const complete = (taskId: string) => {
+    update((s) => finishTask(s, taskId));
+    toast.success("Tâche terminée — stock mis à jour");
+  };
+
+  const previewUnits = parseInt(newUnits, 10) || 0;
+  const previewSize = newSize || state.settings.packSizes[0] || "250g";
+  const previewType = newSize ? packTypeForClient(state, order.clientId, newSize) : "standard";
+  const feas =
+    newProduct && previewUnits > 0
+      ? feasibility(
+          state,
+          newProduct,
+          previewUnits,
+          previewSize,
+          previewType,
+          previewType === "custom" ? order.clientId : undefined,
+        )
+      : null;
+
 
   return (
     <Dialog open={!!order} onOpenChange={(o) => !o && onClose()}>
