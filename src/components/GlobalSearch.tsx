@@ -132,7 +132,7 @@ export function GlobalSearch() {
                   value={`fournisseur ${s.name} ${s.category}`}
                   onSelect={() => {
                     setOpen(false);
-                    navigate({ to: "/partners", search: { tab: "suppliers" } });
+                    navigate({ to: "/partners" });
                   }}
                 >
                   <Truck className="h-4 w-4 text-success" />

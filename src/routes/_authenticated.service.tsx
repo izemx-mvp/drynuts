@@ -2,64 +2,56 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useStore } from "@/lib/store";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
-import { Truck, PackageOpen, Boxes, Building2 } from "lucide-react";
-import { SuppliersPanel } from "@/components/panels/SuppliersPanel";
+import { Headphones, HelpCircle, Clock, Share2 } from "lucide-react";
+import { CustomerServicePanel } from "@/components/panels/CustomerServicePanel";
 
-export const Route = createFileRoute("/_authenticated/partners")({
+export const Route = createFileRoute("/_authenticated/service")({
   head: () => ({
     meta: [
-      { title: "Fournisseurs — DryNuts" },
+      { title: "Service Client — DryNuts" },
       {
         name: "description",
-        content: "Fournisseurs de matière première et d'emballage alimentant la chaîne DryNuts.",
+        content:
+          "Horaires d'ouverture, services proposés, réseaux sociaux et FAQ du service client DryNuts.",
       },
-      { property: "og:title", content: "Fournisseurs — DryNuts" },
+      { property: "og:title", content: "Service Client — DryNuts" },
       {
         property: "og:description",
-        content: "Gérez vos fournisseurs amont : matière première et bobines d'emballage.",
+        content: "La relation client DryNuts : horaires, services, réseaux et FAQ.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: PartnersPage,
+  component: ServicePage,
 });
 
-function PartnersPage() {
+function ServicePage() {
   const { state } = useStore();
+  const cs = state.customerService;
 
   const summary = [
     {
-      label: "Fournisseurs matière",
-      value: `${state.suppliers.filter((s) => s.kind === "raw").length}`,
-      icon: Truck,
+      label: "Jours ouverts",
+      value: `${cs.hours.filter((h) => !h.closed).length}/7`,
+      icon: Clock,
       tone: "primary" as const,
     },
     {
-      label: "Fournisseurs emballage",
-      value: `${state.suppliers.filter((s) => s.kind === "packaging").length}`,
-      icon: PackageOpen,
+      label: "Services proposés",
+      value: `${cs.services.length}`,
+      icon: Headphones,
       tone: "accent" as const,
     },
-    {
-      label: "Lots matière reçus",
-      value: `${state.rawMaterials.length}`,
-      icon: Boxes,
-      tone: "info" as const,
-    },
-    {
-      label: "Villes couvertes",
-      value: `${new Set(state.suppliers.map((s) => s.city)).size}`,
-      icon: Building2,
-      tone: "success" as const,
-    },
+    { label: "Réseaux sociaux", value: `${cs.socials.length}`, icon: Share2, tone: "info" as const },
+    { label: "Questions FAQ", value: `${cs.faq.length}`, icon: HelpCircle, tone: "success" as const },
   ];
 
   return (
-    <div className="section-info">
+    <div className="section-accent">
       <PageHeader
-        title="Fournisseurs"
-        subtitle="L'amont de la chaîne : matière première et emballage qui alimentent la production"
+        title="Service Client"
+        subtitle="Horaires, services, réseaux sociaux et FAQ — tout l'aval de la relation client"
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
@@ -80,7 +72,7 @@ function PartnersPage() {
         ))}
       </div>
 
-      <SuppliersPanel />
+      <CustomerServicePanel />
     </div>
   );
 }

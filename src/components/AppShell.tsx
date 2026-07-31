@@ -4,6 +4,8 @@ import {
   Factory,
   Handshake,
   Truck,
+  Headphones,
+
   Settings as SettingsIcon,
   LogOut,
   Moon,
@@ -35,9 +37,11 @@ const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/production", label: "Production", icon: Factory },
   { to: "/commercial", label: "Commercial", icon: Handshake },
-  { to: "/partners", label: "Partenaires & Service", icon: Truck },
+  { to: "/partners", label: "Fournisseurs", icon: Truck },
+  { to: "/service", label: "Service Client", icon: Headphones },
   { to: "/settings", label: "Paramètres", icon: SettingsIcon },
 ] as const;
+
 
 const COLLAPSE_KEY = "drynuts.sidebar.collapsed";
 

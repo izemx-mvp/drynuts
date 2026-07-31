@@ -7,8 +7,9 @@ import { Users, ShoppingCart, Wallet, Clock } from "lucide-react";
 import { ClientsPanel } from "@/components/panels/ClientsPanel";
 import { OrdersPanel } from "@/components/panels/OrdersPanel";
 
-const TABS = ["clients", "orders"] as const;
+const TABS = ["orders", "clients"] as const;
 type Tab = (typeof TABS)[number];
+
 
 export const Route = createFileRoute("/_authenticated/commercial")({
   validateSearch: (search: Record<string, unknown>): { tab?: Tab } => ({
@@ -35,7 +36,7 @@ function CommercialPage() {
   const { state } = useStore();
   const navigate = useNavigate();
   const search = useSearch({ from: "/_authenticated/commercial" });
-  const tab: Tab = search.tab ?? "clients";
+  const tab: Tab = search.tab ?? "orders";
   const setTab = (v: string) =>
     navigate({ to: "/commercial", search: { tab: v as Tab }, replace: true });
 
@@ -85,20 +86,21 @@ function CommercialPage() {
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="mb-4">
+          <TabsTrigger value="orders">
+            <ShoppingCart className="h-4 w-4 mr-1.5" /> Commandes → Livraison
+          </TabsTrigger>
           <TabsTrigger value="clients">
             <Users className="h-4 w-4 mr-1.5" /> Clients
           </TabsTrigger>
-          <TabsTrigger value="orders">
-            <ShoppingCart className="h-4 w-4 mr-1.5" /> Commandes
-          </TabsTrigger>
         </TabsList>
-        <TabsContent value="clients" className="animate-rise">
-          <ClientsPanel />
-        </TabsContent>
         <TabsContent value="orders" className="animate-rise">
           <OrdersPanel />
         </TabsContent>
+        <TabsContent value="clients" className="animate-rise">
+          <ClientsPanel />
+        </TabsContent>
       </Tabs>
+
     </div>
   );
 }
