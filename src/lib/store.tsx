@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { AppState } from "./types";
 import { initialState } from "./mock-data";
 
-const STORAGE_KEY = "drynuts.state.v1";
+const STORAGE_KEY = "drynuts.state.v2";
 
 type Updater = (s: AppState) => AppState;
 
