@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
 import { Route as AuthenticatedProductionRouteImport } from './routes/_authenticated.production'
+import { Route as AuthenticatedPartnersRouteImport } from './routes/_authenticated.partners'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedCommercialRouteImport } from './routes/_authenticated.commercial'
 
@@ -41,6 +42,11 @@ const AuthenticatedProductionRoute = AuthenticatedProductionRouteImport.update({
   path: '/production',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPartnersRoute = AuthenticatedPartnersRouteImport.update({
+  id: '/partners',
+  path: '/partners',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/commercial': typeof AuthenticatedCommercialRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/partners': typeof AuthenticatedPartnersRoute
   '/production': typeof AuthenticatedProductionRoute
   '/settings': typeof AuthenticatedSettingsRoute
 }
@@ -65,6 +72,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/commercial': typeof AuthenticatedCommercialRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/partners': typeof AuthenticatedPartnersRoute
   '/production': typeof AuthenticatedProductionRoute
   '/settings': typeof AuthenticatedSettingsRoute
 }
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/commercial': typeof AuthenticatedCommercialRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/partners': typeof AuthenticatedPartnersRoute
   '/_authenticated/production': typeof AuthenticatedProductionRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
 }
@@ -85,6 +94,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/commercial'
     | '/dashboard'
+    | '/partners'
     | '/production'
     | '/settings'
   fileRoutesByTo: FileRoutesByTo
@@ -93,6 +103,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/commercial'
     | '/dashboard'
+    | '/partners'
     | '/production'
     | '/settings'
   id:
@@ -102,6 +113,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/commercial'
     | '/_authenticated/dashboard'
+    | '/_authenticated/partners'
     | '/_authenticated/production'
     | '/_authenticated/settings'
   fileRoutesById: FileRoutesById
@@ -149,6 +161,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductionRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/partners': {
+      id: '/_authenticated/partners'
+      path: '/partners'
+      fullPath: '/partners'
+      preLoaderRoute: typeof AuthenticatedPartnersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -169,6 +188,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedCommercialRoute: typeof AuthenticatedCommercialRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedPartnersRoute: typeof AuthenticatedPartnersRoute
   AuthenticatedProductionRoute: typeof AuthenticatedProductionRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
 }
@@ -176,6 +196,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCommercialRoute: AuthenticatedCommercialRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedPartnersRoute: AuthenticatedPartnersRoute,
   AuthenticatedProductionRoute: AuthenticatedProductionRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
 }
