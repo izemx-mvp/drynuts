@@ -1,4 +1,14 @@
+import { useState } from "react";
+import { toast } from "sonner";
 import { useStore } from "@/lib/store";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -25,9 +35,22 @@ import {
   Ban,
   FileText,
   Zap,
+  Plus,
+  Play,
+  CheckCircle2,
 } from "lucide-react";
 import type { Order, OrderStatus } from "@/lib/types";
-import { availableUnits, rawOf } from "@/lib/pipeline";
+import {
+  availableUnits,
+  rawOf,
+  addTask,
+  finishTask,
+  pickWorkshop,
+  feasibility,
+  rawKgFor,
+  rollsFor,
+  packTypeForClient,
+} from "@/lib/pipeline";
 
 export const ORDER_FLOW: {
   key: OrderStatus;
@@ -78,12 +101,110 @@ export function OrderDetail({
   onCancel: (id: string) => void;
   onInvoice: (o: Order) => void;
 }) {
-  const { state } = useStore();
+  const { state, update } = useStore();
+  const [newProduct, setNewProduct] = useState("");
+  const [newSize, setNewSize] = useState("");
+  const [newUnits, setNewUnits] = useState("");
+  const [newWorkshop, setNewWorkshop] = useState("");
   if (!order) return null;
 
   const client = state.clients.find((c) => c.id === order.clientId);
   const tasks = state.tasks.filter((t) => t.orderId === order.id);
   const idx = flowIndex(order.status);
+
+  /** move a received order to production: create tasks for the missing quantities */
+  const launchProduction = () => {
+    let created = 0;
+    update((s) => {
+      let next = s;
+      for (const it of order.items) {
+        const have = availableUnits(next, it.product, it.packSize, it.packType, order.clientId);
+        const missing = it.units - have;
+        if (missing <= 0) continue;
+        const workshopId = pickWorkshop(next);
+        if (!workshopId) continue;
+        next = addTask(next, {
+          workshopId,
+          finishedProduct: it.product,
+          units: missing,
+          packSize: it.packSize,
+          packType: it.packType,
+          clientId: it.packType === "custom" ? order.clientId : undefined,
+          orderId: order.id,
+        });
+        created++;
+      }
+      return {
+        ...next,
+        orders: next.orders.map((o) =>
+          o.id === order.id
+            ? { ...o, status: created > 0 ? ("production" as const) : ("validated" as const) }
+            : o,
+        ),
+      };
+    });
+    toast.success(
+      created > 0
+        ? "Commande passée en production — tâches créées automatiquement"
+        : "Stock suffisant — commande prête à livrer",
+    );
+  };
+
+  const addManualTask = () => {
+    const units = parseInt(newUnits, 10);
+    if (!newProduct || !newSize || !units || units <= 0) {
+      toast.error("Produit, format et quantité sont requis.");
+      return;
+    }
+    const workshopId = newWorkshop || pickWorkshop(state);
+    if (!workshopId) {
+      toast.error("Aucun atelier disponible.");
+      return;
+    }
+    const packType = packTypeForClient(state, order.clientId, newSize);
+    update((s) => {
+      const withTask = addTask(s, {
+        workshopId,
+        finishedProduct: newProduct,
+        units,
+        packSize: newSize,
+        packType,
+        clientId: packType === "custom" ? order.clientId : undefined,
+        orderId: order.id,
+      });
+      return {
+        ...withTask,
+        orders: withTask.orders.map((o) =>
+          o.id === order.id && (o.status === "pending" || o.status === "validated")
+            ? { ...o, status: "production" as const }
+            : o,
+        ),
+      };
+    });
+    toast.success("Tâche de production créée");
+    setNewUnits("");
+  };
+
+  const complete = (taskId: string) => {
+    update((s) => finishTask(s, taskId));
+    toast.success("Tâche terminée — stock mis à jour");
+  };
+
+  const previewUnits = parseInt(newUnits, 10) || 0;
+  const previewSize = newSize || state.settings.packSizes[0] || "250g";
+  const previewType = newSize ? packTypeForClient(state, order.clientId, newSize) : "standard";
+  const feas =
+    newProduct && previewUnits > 0
+      ? feasibility(
+          state,
+          newProduct,
+          previewUnits,
+          previewSize,
+          previewType,
+          previewType === "custom" ? order.clientId : undefined,
+        )
+      : null;
+
 
   return (
     <Dialog open={!!order} onOpenChange={(o) => !o && onClose()}>
@@ -198,14 +319,22 @@ export function OrderDetail({
             </Table>
           </div>
 
-          {/* linked production */}
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-              Tâches de production liées
+          {/* production management */}
+          <div className="rounded-xl border p-4 space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Factory className="h-3.5 w-3.5 text-accent" /> Étape « En production »
+              </div>
+              {order.status === "pending" && (
+                <Button size="sm" onClick={launchProduction}>
+                  <Play className="h-4 w-4 mr-1" /> Passer en production
+                </Button>
+              )}
             </div>
+
             {tasks.length === 0 ? (
               <div className="text-sm text-muted-foreground rounded-lg border border-dashed p-3">
-                Aucune tâche — la commande était couverte par le stock existant.
+                Aucune tâche liée — la commande est couverte par le stock existant.
               </div>
             ) : (
               <div className="space-y-2">
@@ -214,38 +343,123 @@ export function OrderDetail({
                   return (
                     <div
                       key={t.id}
-                      className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm"
+                      className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm"
                     >
-                      <div>
-                        <div className="font-medium">
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">
                           {t.finishedProduct} {t.packSize} · {t.units} paquets
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {ws?.name ?? "Atelier"} · {t.quantityKg} kg de {t.product}
+                        <div className="text-xs text-muted-foreground truncate">
+                          {ws?.name ?? "Atelier"} · {t.quantityKg} kg de {t.product} ·{" "}
+                          {rollsFor(t.units)} rouleau(x)
                         </div>
                       </div>
-                      <Badge
-                        variant="outline"
-                        className={
-                          t.status === "done"
-                            ? "border-success text-success"
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge
+                          variant="outline"
+                          className={
+                            t.status === "done"
+                              ? "border-success text-success"
+                              : t.status === "running"
+                                ? "border-warning text-warning"
+                                : "border-muted-foreground text-muted-foreground"
+                          }
+                        >
+                          {t.status === "done"
+                            ? "Terminée"
                             : t.status === "running"
-                              ? "border-warning text-warning"
-                              : "border-muted-foreground text-muted-foreground"
-                        }
-                      >
-                        {t.status === "done"
-                          ? "Terminée"
-                          : t.status === "running"
-                            ? "En cours"
-                            : "En file"}
-                      </Badge>
+                              ? "En cours"
+                              : "En file"}
+                        </Badge>
+                        {t.status !== "done" && (
+                          <Button size="sm" variant="outline" onClick={() => complete(t.id)}>
+                            <CheckCircle2 className="h-4 w-4 mr-1" /> Terminer
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
               </div>
             )}
+
+            {/* new production task */}
+            {order.status !== "delivered" && order.status !== "cancelled" && (
+              <div className="rounded-lg border border-dashed p-3 space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Nouvelle tâche de production
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <Select value={newProduct} onValueChange={setNewProduct}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Produit fini" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {state.settings.finishedProducts.map((p) => (
+                        <SelectItem key={p} value={p}>
+                          {p}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={newSize} onValueChange={setNewSize}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Format" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {state.settings.packSizes.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    min={1}
+                    placeholder="Paquets"
+                    value={newUnits}
+                    onChange={(e) => setNewUnits(e.target.value)}
+                  />
+                  <Select value={newWorkshop} onValueChange={setNewWorkshop}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Atelier (auto)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {state.workshops
+                        .filter((w) => w.status !== "maintenance")
+                        .map((w) => (
+                          <SelectItem key={w.id} value={w.id}>
+                            {w.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {feas && (
+                  <div className="text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+                    <span className={feas.rawAvailableKg >= feas.rawNeededKg ? "text-success" : "text-warning"}>
+                      <Wheat className="h-3 w-3 inline mr-1" />
+                      {rawKgFor(previewUnits, previewSize)} kg de {feas.rawProduct} ·{" "}
+                      {feas.rawAvailableKg} kg dispo
+                    </span>
+                    <span className={feas.rollsAvailable >= feas.rollsNeeded ? "text-success" : "text-warning"}>
+                      {feas.rollsNeeded} rouleau(x) · {feas.rollsAvailable} dispo
+                    </span>
+                    {previewType === "custom" && (
+                      <span className="text-info">
+                        <Lock className="h-3 w-3 inline mr-1" /> Emballage réservé client
+                      </span>
+                    )}
+                  </div>
+                )}
+                <Button size="sm" variant="secondary" onClick={addManualTask}>
+                  <Plus className="h-4 w-4 mr-1" /> Créer la tâche
+                </Button>
+              </div>
+            )}
           </div>
+
 
           <div className="flex items-center justify-between border-t pt-3">
             <div className="font-semibold text-base">
