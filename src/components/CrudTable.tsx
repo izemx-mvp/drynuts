@@ -80,7 +80,7 @@ export function CrudTable<T extends { id: string }>({
   const [detail, setDetail] = useState<T | null>(null);
   const [form, setForm] = useState<Partial<T>>({});
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   const filtered = useMemo(() => {
     if (!q.trim()) return data;
@@ -92,7 +92,11 @@ export function CrudTable<T extends { id: string }>({
   }, [data, q, searchKeys, columns]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const current = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const safePage = Math.min(page, pageCount);
+  const current = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const pageNumbers = Array.from({ length: pageCount }, (_, i) => i + 1).filter(
+    (n) => n === 1 || n === pageCount || Math.abs(n - safePage) <= 1,
+  );
 
   const openNew = () => {
     setEditing(null);
