@@ -191,6 +191,8 @@ export function OrdersPanel() {
 
   return (
     <div>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un client…" />
                     </SelectTrigger>
                     <SelectContent>
                       {state.clients.map((c) => (
