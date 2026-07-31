@@ -28,20 +28,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus,
   Search,
-  Check,
   Ban,
   Trash2,
   FileText,
   Lock,
   X,
-  ShoppingCart,
-  Factory,
-  PackageCheck,
   Truck,
   Wheat,
+  LayoutGrid,
+  Rows3,
+  ChevronRight,
+  Zap,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Order, OrderItem, OrderStatus } from "@/lib/types";
@@ -54,7 +56,7 @@ import {
   rawOf,
   rollsFor,
 } from "@/lib/pipeline";
-
+import { OrderDetail, ORDER_FLOW } from "./OrderDetail";
 
 const statusMeta: Record<OrderStatus, { label: string; cn: string }> = {
   pending: { label: "Reçue", cn: "border-muted-foreground text-muted-foreground" },
@@ -64,20 +66,15 @@ const statusMeta: Record<OrderStatus, { label: string; cn: string }> = {
   cancelled: { label: "Annulée", cn: "border-destructive text-destructive" },
 };
 
-const pipelineSteps: { key: OrderStatus; label: string; icon: typeof ShoppingCart }[] = [
-  { key: "pending", label: "Commande reçue", icon: ShoppingCart },
-  { key: "production", label: "En production", icon: Factory },
-  { key: "validated", label: "Prête à livrer", icon: PackageCheck },
-  { key: "delivered", label: "Livrée", icon: Truck },
-];
-
 export function OrdersPanel() {
   const { state, update } = useStore();
+  const [view, setView] = useState<"kanban" | "table">("kanban");
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<string>("all");
   const [clientType, setClientType] = useState<string>("all");
   const [openNew, setOpenNew] = useState(false);
   const [invoice, setInvoice] = useState<Order | null>(null);
+  const [detail, setDetail] = useState<Order | null>(null);
 
   const [clientId, setClientId] = useState("");
   const [items, setItems] = useState<OrderItem[]>([]);
@@ -104,11 +101,8 @@ export function OrdersPanel() {
     });
   }, [state.orders, state.clients, q, status, clientType]);
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = {};
-    for (const o of state.orders) c[o.status] = (c[o.status] ?? 0) + 1;
-    return c;
-  }, [state.orders]);
+  // keep the open detail in sync with the live store
+  const liveDetail = detail ? (state.orders.find((o) => o.id === detail.id) ?? null) : null;
 
   /** what the current selection means in stock / production terms */
   const preview = useMemo(() => {
@@ -189,9 +183,22 @@ export function OrdersPanel() {
     toast.success("Supprimée");
   };
 
+  const cancelled = filtered.filter((o) => o.status === "cancelled");
+
   return (
     <div>
-      <div className="flex justify-end mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <Tabs value={view} onValueChange={(v) => setView(v as "kanban" | "table")}>
+          <TabsList>
+            <TabsTrigger value="kanban">
+              <LayoutGrid className="h-4 w-4 mr-1.5" /> Kanban
+            </TabsTrigger>
+            <TabsTrigger value="table">
+              <Rows3 className="h-4 w-4 mr-1.5" /> Tableau
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="ml-auto">
           <Dialog open={openNew} onOpenChange={setOpenNew}>
             <DialogTrigger asChild>
               <Button>
@@ -291,7 +298,7 @@ export function OrdersPanel() {
                         {preview.missing > 0 ? (
                           <>
                             <div className="flex justify-between text-warning">
-                              <span>À produire</span>
+                              <span>À produire automatiquement</span>
                               <span className="font-medium">{preview.missing} paquets</span>
                             </div>
                             <div className="flex justify-between text-muted-foreground">
@@ -354,45 +361,34 @@ export function OrdersPanel() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-      </div>
-
-      {/* Pipeline overview */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-        {pipelineSteps.map((step, i) => (
-          <Card key={step.key} className="p-4 relative overflow-hidden">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                <step.icon className="h-4 w-4" />
-              </div>
-              <div>
-                <div className="text-xl font-bold leading-none">{counts[step.key] ?? 0}</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {i + 1}. {step.label}
-                </div>
-              </div>
-            </div>
-          </Card>
-        ))}
+        </div>
       </div>
 
       <Card className="p-4 mb-4 flex flex-col md:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher…" className="pl-9" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Rechercher…"
+            className="pl-9"
+          />
         </div>
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tous les statuts</SelectItem>
-            <SelectItem value="pending">Reçue</SelectItem>
-            <SelectItem value="production">En production</SelectItem>
-            <SelectItem value="validated">Prête</SelectItem>
-            <SelectItem value="delivered">Livrée</SelectItem>
-            <SelectItem value="cancelled">Annulée</SelectItem>
-          </SelectContent>
-        </Select>
+        {view === "table" && (
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les statuts</SelectItem>
+              <SelectItem value="pending">Reçue</SelectItem>
+              <SelectItem value="production">En production</SelectItem>
+              <SelectItem value="validated">Prête</SelectItem>
+              <SelectItem value="delivered">Livrée</SelectItem>
+              <SelectItem value="cancelled">Annulée</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
         <Select value={clientType} onValueChange={setClientType}>
           <SelectTrigger className="w-48">
             <SelectValue />
@@ -408,103 +404,245 @@ export function OrdersPanel() {
         </Select>
       </Card>
 
-      <Card className="p-0 overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>N°</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Produits</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Étape</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                  Aucune commande
-                </TableCell>
-              </TableRow>
-            )}
-            {filtered.map((o) => {
-              const client = state.clients.find((c) => c.id === o.clientId);
-              const st = statusMeta[o.status];
-              const openTasks = state.tasks.filter(
-                (t) => t.orderId === o.id && t.status !== "done",
-              ).length;
-              return (
-                <TableRow key={o.id} className="hover:bg-muted/40">
-                  <TableCell className="font-mono text-xs">{o.id.slice(-6)}</TableCell>
-                  <TableCell className="font-medium">{client?.name ?? "—"}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{client?.type}</Badge>
-                  </TableCell>
-                  <TableCell className="text-xs">
-                    {o.items.map((it) => `${it.product} ${it.packSize}×${it.units}`).join(", ")}
-                  </TableCell>
-                  <TableCell className="font-semibold">{o.total.toLocaleString("fr-FR")} MAD</TableCell>
-                  <TableCell className="text-xs">
-                    {new Date(o.createdAt).toLocaleDateString("fr-FR")}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1 items-start">
-                      <Badge variant="outline" className={st.cn}>
-                        {st.label}
-                      </Badge>
-                      {openTasks > 0 && (
-                        <span className="text-[10px] text-muted-foreground">
-                          {openTasks} tâche(s) atelier
-                        </span>
-                      )}
+      {view === "kanban" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+          {ORDER_FLOW.map((col, ci) => {
+            const list = filtered.filter((o) => o.status === col.key);
+            return (
+              <div key={col.key} className="min-w-0">
+                <Card className="p-3 mb-3 relative overflow-hidden">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <col.icon className="h-4 w-4" />
                     </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold truncate">
+                        {ci + 1}. {col.label}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {list.length} commande(s)
+                      </div>
+                    </div>
+                    {ci < ORDER_FLOW.length - 1 && (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto shrink-0" />
+                    )}
+                  </div>
+                  <div className="mt-2 flex items-start gap-1.5 text-[11px] text-muted-foreground leading-snug">
+                    <Zap className="h-3 w-3 mt-0.5 text-accent shrink-0" />
+                    <span>{col.auto}</span>
+                  </div>
+                </Card>
+
+                <div className="space-y-2">
+                  {list.length === 0 && (
+                    <div className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
+                      Vide
+                    </div>
+                  )}
+                  {list.map((o) => {
+                    const client = state.clients.find((c) => c.id === o.clientId);
+                    const openTasks = state.tasks.filter(
+                      (t) => t.orderId === o.id && t.status !== "done",
+                    ).length;
+                    return (
+                      <Card
+                        key={o.id}
+                        onClick={() => setDetail(o)}
+                        className="glow-card p-3 cursor-pointer transition-transform duration-300 ease-[var(--ease-spring)] hover:-translate-y-0.5"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold truncate">
+                              {client?.name ?? "—"}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground font-mono">
+                              #{o.id.slice(-6)} ·{" "}
+                              {new Date(o.createdAt).toLocaleDateString("fr-FR")}
+                            </div>
+                          </div>
+                          <Badge variant="outline" className={statusMeta[o.status].cn}>
+                            {statusMeta[o.status].label}
+                          </Badge>
+                        </div>
+                        <div className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                          {o.items
+                            .map((it) => `${it.product} ${it.packSize}×${it.units}`)
+                            .join(", ")}
+                        </div>
+                        <div className="mt-2 flex items-center justify-between">
+                          <span className="font-semibold text-sm">
+                            {o.total.toLocaleString("fr-FR")} MAD
+                          </span>
+                          {openTasks > 0 && (
+                            <span className="text-[10px] text-warning">
+                              {openTasks} tâche(s) atelier
+                            </span>
+                          )}
+                        </div>
+                        {o.status === "validated" && (
+                          <Button
+                            size="sm"
+                            className="w-full mt-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deliver(o.id);
+                            }}
+                          >
+                            <Truck className="h-3.5 w-3.5 mr-1" /> Livrer
+                          </Button>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          {cancelled.length > 0 && (
+            <div className="xl:col-span-4">
+              <div className="text-xs text-muted-foreground mb-2">
+                Annulées ({cancelled.length})
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {cancelled.map((o) => (
+                  <Badge
+                    key={o.id}
+                    variant="outline"
+                    className="cursor-pointer border-destructive text-destructive"
+                    onClick={() => setDetail(o)}
+                  >
+                    #{o.id.slice(-6)} ·{" "}
+                    {state.clients.find((c) => c.id === o.clientId)?.name}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <Card className="p-0 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>N°</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Produits</TableHead>
+                <TableHead>Total</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Étape</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                    Aucune commande
                   </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      {o.status === "validated" && (
-                        <Button size="icon" variant="ghost" onClick={() => deliver(o.id)} title="Livrer">
-                          <Truck className="h-4 w-4 text-success" />
-                        </Button>
-                      )}
-                      {o.status === "pending" && (
+                </TableRow>
+              )}
+              {filtered.map((o) => {
+                const client = state.clients.find((c) => c.id === o.clientId);
+                const st = statusMeta[o.status];
+                const openTasks = state.tasks.filter(
+                  (t) => t.orderId === o.id && t.status !== "done",
+                ).length;
+                return (
+                  <TableRow
+                    key={o.id}
+                    className="hover:bg-muted/40 cursor-pointer"
+                    onClick={() => setDetail(o)}
+                  >
+                    <TableCell className="font-mono text-xs">{o.id.slice(-6)}</TableCell>
+                    <TableCell className="font-medium">{client?.name ?? "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{client?.type}</Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {o.items.map((it) => `${it.product} ${it.packSize}×${it.units}`).join(", ")}
+                    </TableCell>
+                    <TableCell className="font-semibold">
+                      {o.total.toLocaleString("fr-FR")} MAD
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      {new Date(o.createdAt).toLocaleDateString("fr-FR")}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1 items-start">
+                        <Badge variant="outline" className={st.cn}>
+                          {st.label}
+                        </Badge>
+                        {openTasks > 0 && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {openTasks} tâche(s) atelier
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex justify-end gap-1">
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() =>
-                            update((s) => ({
-                              ...s,
-                              orders: s.orders.map((x) =>
-                                x.id === o.id ? { ...x, status: "validated" } : x,
-                              ),
-                            }))
-                          }
-                          title="Marquer prête"
+                          onClick={() => setDetail(o)}
+                          title="Détails"
                         >
-                          <Check className="h-4 w-4 text-info" />
+                          <Eye className="h-4 w-4" />
                         </Button>
-                      )}
-                      {o.status !== "cancelled" && o.status !== "delivered" && (
-                        <Button size="icon" variant="ghost" onClick={() => cancel(o.id)} title="Annuler">
-                          <Ban className="h-4 w-4 text-destructive" />
+                        {o.status === "validated" && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => deliver(o.id)}
+                            title="Livrer"
+                          >
+                            <Truck className="h-4 w-4 text-success" />
+                          </Button>
+                        )}
+                        {o.status !== "cancelled" && o.status !== "delivered" && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => cancel(o.id)}
+                            title="Annuler"
+                          >
+                            <Ban className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setInvoice(o)}
+                          title="Facture"
+                        >
+                          <FileText className="h-4 w-4" />
                         </Button>
-                      )}
-                      <Button size="icon" variant="ghost" onClick={() => setInvoice(o)} title="Facture">
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => del(o.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </Card>
+                        <Button size="icon" variant="ghost" onClick={() => del(o.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+
+      <OrderDetail
+        order={liveDetail}
+        onClose={() => setDetail(null)}
+        onDeliver={(id) => {
+          deliver(id);
+        }}
+        onCancel={(id) => cancel(id)}
+        onInvoice={(o) => {
+          setDetail(null);
+          setInvoice(o);
+        }}
+      />
 
       <Dialog open={!!invoice} onOpenChange={(o) => !o && setInvoice(null)}>
         <DialogContent className="max-w-lg">
@@ -522,24 +660,6 @@ export function OrdersPanel() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Date</span>
                 <span>{new Date(invoice.createdAt).toLocaleDateString("fr-FR")}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {pipelineSteps.map((s, i) => {
-                  const order = ["pending", "production", "validated", "delivered"];
-                  const done = order.indexOf(invoice.status) >= i;
-                  return (
-                    <div key={s.key} className="flex items-center gap-2">
-                      <div
-                        className={`h-7 w-7 rounded-full flex items-center justify-center border ${
-                          done ? "bg-primary text-primary-foreground border-primary" : "text-muted-foreground"
-                        }`}
-                      >
-                        <s.icon className="h-3.5 w-3.5" />
-                      </div>
-                      {i < pipelineSteps.length - 1 && <div className="w-6 h-px bg-border" />}
-                    </div>
-                  );
-                })}
               </div>
               <div className="border rounded-lg overflow-hidden">
                 <Table>
