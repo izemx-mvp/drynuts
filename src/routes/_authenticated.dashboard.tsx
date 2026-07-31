@@ -207,7 +207,7 @@ function Dashboard() {
               return (
                 <div key={t.id} className="pb-2 border-b last:border-0">
                   <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="font-medium">{t.product}</span>
+                    <span className="font-medium">{t.finishedProduct}</span>
                     <span className="text-muted-foreground">{Math.round(t.progress)}%</span>
                   </div>
                   <Progress value={t.progress} className="h-1.5" />

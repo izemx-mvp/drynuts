@@ -37,17 +37,21 @@ export type TaskStatus = "queued" | "running" | "done";
 export interface ProductionTask {
   id: ID;
   workshopId: ID;
-  product: string;
-  quantityKg: number;
+  finishedProduct: string; // produit final à fabriquer
+  product: string; // matière première consommée (déduite de la recette)
+  units: number; // nombre de paquets à produire
+  quantityKg: number; // matière première nécessaire
   packSize: string;
   packType: "standard" | "custom";
   clientId?: ID;
+  orderId?: ID; // commande à l'origine de la tâche
   status: TaskStatus;
   progress: number; // 0-100
   createdAt: string;
   startedAt?: string;
   finishedAt?: string;
 }
+
 
 export interface FinishedProduct {
   id: ID;
@@ -86,7 +90,13 @@ export interface Supplier {
   city: string;
 }
 
-export type OrderStatus = "pending" | "validated" | "delivered" | "cancelled";
+export type OrderStatus =
+  | "pending"
+  | "production"
+  | "validated"
+  | "delivered"
+  | "cancelled";
+
 
 export interface OrderItem {
   productId: ID;
@@ -111,8 +121,11 @@ export interface Settings {
   finishedProducts: string[];
   packSizes: string[];
   clientTypes: ClientType[];
+  /** produit fini -> matière première utilisée */
+  recipes: Record<string, string>;
   theme: "light" | "dark";
 }
+
 
 export interface OpeningHour {
   day: string; // Lundi..Dimanche

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useState } from "react";
 import { useStore, genId } from "@/lib/store";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -22,13 +22,12 @@ import {
   Handshake,
   Share2,
   HelpCircle,
-  Bot,
   Plus,
   Pencil,
   Trash2,
-  Send,
   ExternalLink,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import type { FaqItem, ServiceOffer, SocialLink } from "@/lib/types";
 
@@ -39,7 +38,7 @@ export const Route = createFileRoute("/_authenticated/customer-service")({
       {
         name: "description",
         content:
-          "Horaires, services, réseaux sociaux, FAQ et assistant IA du service client DryNuts.",
+          "Horaires, services, réseaux sociaux et FAQ du service client DryNuts.",
       },
     ],
   }),
@@ -54,7 +53,7 @@ function CustomerServicePage() {
     <div>
       <PageHeader
         title="Service Client"
-        subtitle="Informations publiques de l'entreprise et assistant conversationnel"
+        subtitle="Informations publiques de l'entreprise"
       />
 
       <Tabs defaultValue="hours">
@@ -70,9 +69,6 @@ function CustomerServicePage() {
           </TabsTrigger>
           <TabsTrigger value="faq">
             <HelpCircle className="h-4 w-4 mr-1.5" /> FAQ
-          </TabsTrigger>
-          <TabsTrigger value="assistant">
-            <Bot className="h-4 w-4 mr-1.5" /> Assistant IA
           </TabsTrigger>
         </TabsList>
 
@@ -160,9 +156,6 @@ function CustomerServicePage() {
         </TabsContent>
         <TabsContent value="faq">
           <FaqTab />
-        </TabsContent>
-        <TabsContent value="assistant">
-          <AssistantTab />
         </TabsContent>
       </Tabs>
     </div>
@@ -519,160 +512,6 @@ function FaqTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
-  );
-}
-
-/* ---------------- Assistant ---------------- */
-type ChatMsg = { id: string; role: "user" | "bot"; text: string };
-
-const normalize = (s: string) =>
-  s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-
-function AssistantTab() {
-  const { state } = useStore();
-  const cs = state.customerService;
-  const [messages, setMessages] = useState<ChatMsg[]>([
-    {
-      id: "welcome",
-      role: "bot",
-      text: "Bonjour 👋 Je suis l'assistant DryNuts. Posez-moi une question sur nos horaires, nos services, nos réseaux sociaux ou consultez notre FAQ.",
-    },
-  ]);
-  const [input, setInput] = useState("");
-  const endRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-    inputRef.current?.focus();
-  }, [messages]);
-
-  const hoursText = useMemo(
-    () =>
-      cs.hours
-        .map((h) => `• ${h.day} : ${h.closed ? "Fermé" : `${h.open} – ${h.close}`}`)
-        .join("\n"),
-    [cs.hours],
-  );
-
-  const answer = (raw: string): string => {
-    const q = normalize(raw);
-
-    // FAQ match first (word overlap)
-    const words = q.split(/\W+/).filter((w) => w.length > 3);
-    let best: { item: FaqItem; score: number } | null = null;
-    for (const item of cs.faq) {
-      const target = normalize(item.question + " " + item.answer);
-      const score = words.filter((w) => target.includes(w)).length;
-      if (score >= 2 && (!best || score > best.score)) best = { item, score };
-    }
-
-    if (/(horaire|heure|ouvert|ouvrez|ferme|fermeture|dimanche|samedi)/.test(q)) {
-      return `Voici nos horaires d'ouverture :\n${hoursText}`;
-    }
-    if (/(service|proposez|offrez|marque blanche|personnalis|livraison|gros)/.test(q)) {
-      return cs.services.length
-        ? `Nos services :\n${cs.services.map((s) => `• ${s.name} — ${s.description}`).join("\n")}`
-        : "Aucun service n'est configuré pour le moment.";
-    }
-    if (/(instagram|facebook|linkedin|whatsapp|reseau|social|page|suivre)/.test(q)) {
-      return cs.socials.length
-        ? `Retrouvez-nous ici :\n${cs.socials.map((s) => `• ${s.network} : ${s.url}`).join("\n")}`
-        : "Aucun réseau social n'est configuré pour le moment.";
-    }
-    if (best) return best.item.answer;
-    if (/(bonjour|salut|hello|bonsoir)/.test(q)) return "Bonjour ! Comment puis-je vous aider ?";
-    if (/(merci)/.test(q)) return "Avec plaisir ! Autre chose ?";
-
-    return `Je n'ai pas trouvé de réponse précise. Vous pouvez me demander :\n• Quels sont vos horaires ?\n• Quels services proposez-vous ?\n• Avez-vous une page Instagram ?\n${cs.faq
-      .slice(0, 3)
-      .map((f) => `• ${f.question}`)
-      .join("\n")}`;
-  };
-
-  const send = () => {
-    const text = input.trim();
-    if (!text) return;
-    const userMsg: ChatMsg = { id: genId("msg"), role: "user", text };
-    const botMsg: ChatMsg = { id: genId("msg"), role: "bot", text: answer(text) };
-    setMessages((m) => [...m, userMsg, botMsg]);
-    setInput("");
-  };
-
-  const suggestions = [
-    "Quels sont vos horaires ?",
-    "Quels services proposez-vous ?",
-    "Avez-vous une page Instagram ?",
-  ];
-
-  return (
-    <Card className="p-5">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-          <Bot className="h-5 w-5" />
-        </div>
-        <div>
-          <h3 className="font-semibold">Assistant service client</h3>
-          <p className="text-xs text-muted-foreground">
-            Répond à partir des horaires, services, réseaux sociaux et FAQ configurés ci-dessus.
-          </p>
-        </div>
-      </div>
-
-      <div className="border rounded-lg h-[420px] overflow-y-auto p-4 space-y-3 bg-muted/20">
-        {messages.map((m) => (
-          <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
-            <div
-              className={
-                m.role === "user"
-                  ? "max-w-[80%] rounded-lg px-3 py-2 text-sm bg-primary text-primary-foreground whitespace-pre-line"
-                  : "max-w-[85%] rounded-lg px-3 py-2 text-sm bg-card border text-foreground whitespace-pre-line"
-              }
-            >
-              {m.text}
-            </div>
-          </div>
-        ))}
-        <div ref={endRef} />
-      </div>
-
-      <div className="flex flex-wrap gap-2 mt-3">
-        {suggestions.map((s) => (
-          <Button
-            key={s}
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setMessages((m) => [
-                ...m,
-                { id: genId("msg"), role: "user", text: s },
-                { id: genId("msg"), role: "bot", text: answer(s) },
-              ]);
-            }}
-          >
-            {s}
-          </Button>
-        ))}
-      </div>
-
-      <div className="flex gap-2 mt-3">
-        <Input
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") send();
-          }}
-          placeholder="Posez votre question…"
-        />
-        <Button onClick={send}>
-          <Send className="h-4 w-4" />
-        </Button>
-      </div>
     </Card>
   );
 }

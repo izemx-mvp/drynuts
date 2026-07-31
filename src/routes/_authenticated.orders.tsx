@@ -30,26 +30,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, Check, Ban, Trash2, FileText, Lock, X } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Check,
+  Ban,
+  Trash2,
+  FileText,
+  Lock,
+  X,
+  ShoppingCart,
+  Factory,
+  PackageCheck,
+  Truck,
+  Wheat,
+} from "lucide-react";
 import { toast } from "sonner";
 import type { Order, OrderItem, OrderStatus } from "@/lib/types";
+import {
+  availableUnits,
+  deliverOrder,
+  packTypeForClient,
+  placeOrder,
+  rawKgFor,
+  rawOf,
+  rollsFor,
+} from "@/lib/pipeline";
 
 export const Route = createFileRoute("/_authenticated/orders")({
   head: () => ({
     meta: [
       { title: "Ventes / Commandes — DryNuts" },
-      { name: "description", content: "Suivi des commandes clients et facturation." },
+      {
+        name: "description",
+        content:
+          "Pipeline commercial DryNuts : de la commande client à la production puis à la livraison.",
+      },
+      { property: "og:title", content: "Ventes / Commandes — DryNuts" },
+      {
+        property: "og:description",
+        content: "Pipeline automatisé commande → production → prête → livrée.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: OrdersPage,
 });
 
 const statusMeta: Record<OrderStatus, { label: string; cn: string }> = {
-  pending: { label: "En attente", cn: "border-warning text-warning" },
-  validated: { label: "Validée", cn: "border-info text-info" },
+  pending: { label: "Reçue", cn: "border-muted-foreground text-muted-foreground" },
+  production: { label: "En production", cn: "border-warning text-warning" },
+  validated: { label: "Prête", cn: "border-info text-info" },
   delivered: { label: "Livrée", cn: "border-success text-success" },
   cancelled: { label: "Annulée", cn: "border-destructive text-destructive" },
 };
+
+const pipelineSteps: { key: OrderStatus; label: string; icon: typeof ShoppingCart }[] = [
+  { key: "pending", label: "Commande reçue", icon: ShoppingCart },
+  { key: "production", label: "En production", icon: Factory },
+  { key: "validated", label: "Prête à livrer", icon: PackageCheck },
+  { key: "delivered", label: "Livrée", icon: Truck },
+];
 
 function OrdersPage() {
   const { state, update } = useStore();
@@ -62,7 +104,8 @@ function OrdersPage() {
   const [clientId, setClientId] = useState("");
   const [items, setItems] = useState<OrderItem[]>([]);
   const [pickProduct, setPickProduct] = useState<string>("");
-  const [pickUnits, setPickUnits] = useState(10);
+  const [pickSize, setPickSize] = useState<string>("250g");
+  const [pickUnits, setPickUnits] = useState(100);
   const [pickPrice, setPickPrice] = useState(20);
 
   const filtered = useMemo(() => {
@@ -83,28 +126,41 @@ function OrdersPage() {
     });
   }, [state.orders, state.clients, q, status, clientType]);
 
-  const availableProducts = useMemo(() => {
-    if (!clientId) return [];
-    return state.finished.filter(
-      (f) => f.packType === "standard" || (f.packType === "custom" && f.clientId === clientId),
-    );
-  }, [state.finished, clientId]);
+  const counts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const o of state.orders) c[o.status] = (c[o.status] ?? 0) + 1;
+    return c;
+  }, [state.orders]);
+
+  /** what the current selection means in stock / production terms */
+  const preview = useMemo(() => {
+    if (!clientId || !pickProduct) return null;
+    const packType = packTypeForClient(state, clientId, pickSize);
+    const have = availableUnits(state, pickProduct, pickSize, packType, clientId);
+    const missing = Math.max(0, pickUnits - have);
+    return {
+      packType,
+      have,
+      missing,
+      rawProduct: rawOf(state, pickProduct),
+      rawKg: rawKgFor(missing, pickSize),
+      rolls: missing > 0 ? rollsFor(missing) : 0,
+    };
+  }, [state, clientId, pickProduct, pickSize, pickUnits]);
 
   const addItem = () => {
-    if (!pickProduct) return;
-    const src = state.finished.find((f) => f.id === pickProduct);
-    if (!src) return;
-    if (src.packType === "custom" && src.clientId !== clientId) {
-      toast.error("Ce produit personnalisé est réservé à un autre client.");
+    if (!pickProduct || !preview) {
+      toast.error("Choisissez un produit final.");
       return;
     }
+    if (pickUnits <= 0) return;
     setItems((prev) => [
       ...prev,
       {
-        productId: src.id,
-        product: src.product,
-        packSize: src.packSize,
-        packType: src.packType,
+        productId: `${pickProduct}-${pickSize}`,
+        product: pickProduct,
+        packSize: pickSize,
+        packType: preview.packType,
         units: pickUnits,
         unitPrice: pickPrice,
       },
@@ -131,19 +187,23 @@ function OrdersPage() {
       status: "pending",
       createdAt: new Date().toISOString(),
     };
-    update((s) => ({ ...s, orders: [order, ...s.orders] }));
-    toast.success("Commande créée");
+    update((s) => placeOrder(s, order));
+    toast.success("Commande enregistrée — production lancée automatiquement si nécessaire");
     setClientId("");
     setItems([]);
     setOpenNew(false);
   };
 
-  const setStatusOf = (id: string, next: OrderStatus) => {
+  const deliver = (id: string) => {
+    update((s) => deliverOrder(s, id));
+    toast.success("Commande livrée — stock produits finis déduit");
+  };
+  const cancel = (id: string) => {
     update((s) => ({
       ...s,
-      orders: s.orders.map((o) => (o.id === id ? { ...o, status: next } : o)),
+      orders: s.orders.map((o) => (o.id === id ? { ...o, status: "cancelled" } : o)),
     }));
-    toast.success("Statut mis à jour");
+    toast.success("Commande annulée");
   };
   const del = (id: string) => {
     if (!confirm("Supprimer cette commande ?")) return;
@@ -155,7 +215,7 @@ function OrdersPage() {
     <div>
       <PageHeader
         title="Ventes / Commandes"
-        subtitle="Suivi commandes B2B — la disponibilité respecte la réservation client"
+        subtitle="Pipeline automatisé : commande → production → prête → livraison"
         actions={
           <Dialog open={openNew} onOpenChange={setOpenNew}>
             <DialogTrigger asChild>
@@ -192,35 +252,89 @@ function OrdersPage() {
 
                 {clientId && (
                   <div className="rounded-lg border p-3 bg-muted/30 space-y-3">
-                    <div className="grid grid-cols-[1fr_100px_100px_auto] gap-2 items-end">
+                    <div className="grid grid-cols-[1fr_90px_90px_90px_auto] gap-2 items-end">
                       <div className="space-y-1">
-                        <Label className="text-xs">Produit disponible</Label>
+                        <Label className="text-xs">Produit final</Label>
                         <Select value={pickProduct} onValueChange={setPickProduct}>
                           <SelectTrigger>
                             <SelectValue placeholder="Choisir…" />
                           </SelectTrigger>
                           <SelectContent>
-                            {availableProducts.map((f) => (
-                              <SelectItem key={f.id} value={f.id}>
-                                {f.product} · {f.packSize} ·{" "}
-                                {f.packType === "custom" ? "Perso" : "Std"} · {f.units} dispo
+                            {state.settings.finishedProducts.map((p) => (
+                              <SelectItem key={p} value={p}>
+                                {p}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs">Unités</Label>
-                        <Input type="number" value={pickUnits} onChange={(e) => setPickUnits(Number(e.target.value))} />
+                        <Label className="text-xs">Taille</Label>
+                        <Select value={pickSize} onValueChange={setPickSize}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {state.settings.packSizes.map((s) => (
+                              <SelectItem key={s} value={s}>
+                                {s}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs">Prix (MAD)</Label>
-                        <Input type="number" value={pickPrice} onChange={(e) => setPickPrice(Number(e.target.value))} />
+                        <Label className="text-xs">Paquets</Label>
+                        <Input
+                          type="number"
+                          value={pickUnits}
+                          onChange={(e) => setPickUnits(Number(e.target.value))}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">PU (MAD)</Label>
+                        <Input
+                          type="number"
+                          value={pickPrice}
+                          onChange={(e) => setPickPrice(Number(e.target.value))}
+                        />
                       </div>
                       <Button type="button" onClick={addItem}>
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
+
+                    {preview && (
+                      <div className="rounded-md bg-card border p-2.5 text-xs space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Stock disponible</span>
+                          <span className="font-medium">
+                            {preview.have} paquets ·{" "}
+                            {preview.packType === "custom" ? "réservé client" : "standard"}
+                          </span>
+                        </div>
+                        {preview.missing > 0 ? (
+                          <>
+                            <div className="flex justify-between text-warning">
+                              <span>À produire</span>
+                              <span className="font-medium">{preview.missing} paquets</span>
+                            </div>
+                            <div className="flex justify-between text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Wheat className="h-3 w-3" /> Matière première nécessaire
+                              </span>
+                              <span>
+                                {preview.rawKg.toLocaleString("fr-FR")} kg de {preview.rawProduct} ·{" "}
+                                {preview.rolls} rouleau(x)
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-success">Entièrement couvert par le stock</div>
+                        )}
+                      </div>
+                    )}
+
                     {items.length > 0 && (
                       <div className="space-y-1">
                         {items.map((it, i) => (
@@ -268,6 +382,25 @@ function OrdersPage() {
         }
       />
 
+      {/* Pipeline overview */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        {pipelineSteps.map((step, i) => (
+          <Card key={step.key} className="p-4 relative overflow-hidden">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <step.icon className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="text-xl font-bold leading-none">{counts[step.key] ?? 0}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {i + 1}. {step.label}
+                </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
       <Card className="p-4 mb-4 flex flex-col md:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -279,8 +412,9 @@ function OrdersPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les statuts</SelectItem>
-            <SelectItem value="pending">En attente</SelectItem>
-            <SelectItem value="validated">Validée</SelectItem>
+            <SelectItem value="pending">Reçue</SelectItem>
+            <SelectItem value="production">En production</SelectItem>
+            <SelectItem value="validated">Prête</SelectItem>
             <SelectItem value="delivered">Livrée</SelectItem>
             <SelectItem value="cancelled">Annulée</SelectItem>
           </SelectContent>
@@ -310,7 +444,7 @@ function OrdersPage() {
               <TableHead>Produits</TableHead>
               <TableHead>Total</TableHead>
               <TableHead>Date</TableHead>
-              <TableHead>Statut</TableHead>
+              <TableHead>Étape</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -325,6 +459,9 @@ function OrdersPage() {
             {filtered.map((o) => {
               const client = state.clients.find((c) => c.id === o.clientId);
               const st = statusMeta[o.status];
+              const openTasks = state.tasks.filter(
+                (t) => t.orderId === o.id && t.status !== "done",
+              ).length;
               return (
                 <TableRow key={o.id} className="hover:bg-muted/40">
                   <TableCell className="font-mono text-xs">{o.id.slice(-6)}</TableCell>
@@ -340,24 +477,43 @@ function OrdersPage() {
                     {new Date(o.createdAt).toLocaleDateString("fr-FR")}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={st.cn}>
-                      {st.label}
-                    </Badge>
+                    <div className="flex flex-col gap-1 items-start">
+                      <Badge variant="outline" className={st.cn}>
+                        {st.label}
+                      </Badge>
+                      {openTasks > 0 && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {openTasks} tâche(s) atelier
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      {o.status === "pending" && (
-                        <Button size="icon" variant="ghost" onClick={() => setStatusOf(o.id, "validated")} title="Valider">
-                          <Check className="h-4 w-4 text-success" />
+                      {o.status === "validated" && (
+                        <Button size="icon" variant="ghost" onClick={() => deliver(o.id)} title="Livrer">
+                          <Truck className="h-4 w-4 text-success" />
                         </Button>
                       )}
-                      {o.status === "validated" && (
-                        <Button size="icon" variant="ghost" onClick={() => setStatusOf(o.id, "delivered")} title="Livrer">
+                      {o.status === "pending" && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() =>
+                            update((s) => ({
+                              ...s,
+                              orders: s.orders.map((x) =>
+                                x.id === o.id ? { ...x, status: "validated" } : x,
+                              ),
+                            }))
+                          }
+                          title="Marquer prête"
+                        >
                           <Check className="h-4 w-4 text-info" />
                         </Button>
                       )}
                       {o.status !== "cancelled" && o.status !== "delivered" && (
-                        <Button size="icon" variant="ghost" onClick={() => setStatusOf(o.id, "cancelled")} title="Annuler">
+                        <Button size="icon" variant="ghost" onClick={() => cancel(o.id)} title="Annuler">
                           <Ban className="h-4 w-4 text-destructive" />
                         </Button>
                       )}
@@ -392,6 +548,24 @@ function OrdersPage() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Date</span>
                 <span>{new Date(invoice.createdAt).toLocaleDateString("fr-FR")}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {pipelineSteps.map((s, i) => {
+                  const order = ["pending", "production", "validated", "delivered"];
+                  const done = order.indexOf(invoice.status) >= i;
+                  return (
+                    <div key={s.key} className="flex items-center gap-2">
+                      <div
+                        className={`h-7 w-7 rounded-full flex items-center justify-center border ${
+                          done ? "bg-primary text-primary-foreground border-primary" : "text-muted-foreground"
+                        }`}
+                      >
+                        <s.icon className="h-3.5 w-3.5" />
+                      </div>
+                      {i < pipelineSteps.length - 1 && <div className="w-6 h-px bg-border" />}
+                    </div>
+                  );
+                })}
               </div>
               <div className="border rounded-lg overflow-hidden">
                 <Table>

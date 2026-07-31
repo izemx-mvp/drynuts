@@ -96,13 +96,27 @@ const packaging = [
   { id: uid("pkg", 10), label: "Sachet standard 2kg", size: "2kg", type: "standard" as const, quantityRolls: 3, supplierId: "sup-004", receivedAt: iso(15), threshold: 5 },
 ];
 
+const recipes: Record<string, string> = {
+  "Amandes nature": "Amandes",
+  "Amandes grillées salées": "Amandes",
+  "Noix de cajou nature": "Noix de cajou",
+  "Cheese Nuts": "Cacahuètes",
+  "Honey Nuts": "Cacahuètes",
+  "Spicy Mix": "Cacahuètes",
+  "Mélange apéritif": "Amandes",
+  "Pistaches grillées": "Pistaches",
+  "Dattes fourrées": "Dattes",
+  Autres: "Amandes",
+};
+
 const tasks = [
-  { id: "task-001", workshopId: "atl-001", product: "Amandes", quantityKg: 200, packSize: "250g", packType: "standard" as const, status: "running" as const, progress: 62, createdAt: iso(0), startedAt: iso(0) },
-  { id: "task-002", workshopId: "atl-002", product: "Cacahuètes", quantityKg: 350, packSize: "500g", packType: "custom" as const, clientId: "cli-001", status: "running" as const, progress: 34, createdAt: iso(0), startedAt: iso(0) },
-  { id: "task-003", workshopId: "atl-004", product: "Pistaches", quantityKg: 80, packSize: "100g", packType: "custom" as const, clientId: "cli-002", status: "running" as const, progress: 45, createdAt: iso(0), startedAt: iso(0) },
-  { id: "task-004", workshopId: "atl-001", product: "Noix", quantityKg: 100, packSize: "250g", packType: "standard" as const, status: "queued" as const, progress: 0, createdAt: iso(0) },
-  { id: "task-005", workshopId: "atl-003", product: "Dattes", quantityKg: 120, packSize: "500g", packType: "standard" as const, status: "queued" as const, progress: 0, createdAt: iso(0) },
+  { id: "task-001", workshopId: "atl-001", finishedProduct: "Amandes nature", product: "Amandes", units: 800, quantityKg: 200, packSize: "250g", packType: "standard" as const, status: "running" as const, progress: 62, createdAt: iso(0), startedAt: iso(0) },
+  { id: "task-002", workshopId: "atl-002", finishedProduct: "Cheese Nuts", product: "Cacahuètes", units: 700, quantityKg: 350, packSize: "500g", packType: "custom" as const, clientId: "cli-001", status: "running" as const, progress: 34, createdAt: iso(0), startedAt: iso(0) },
+  { id: "task-003", workshopId: "atl-004", finishedProduct: "Pistaches grillées", product: "Pistaches", units: 800, quantityKg: 80, packSize: "100g", packType: "custom" as const, clientId: "cli-002", status: "running" as const, progress: 45, createdAt: iso(0), startedAt: iso(0) },
+  { id: "task-004", workshopId: "atl-001", finishedProduct: "Mélange apéritif", product: "Amandes", units: 400, quantityKg: 100, packSize: "250g", packType: "standard" as const, status: "queued" as const, progress: 0, createdAt: iso(0) },
+  { id: "task-005", workshopId: "atl-003", finishedProduct: "Dattes fourrées", product: "Dattes", units: 240, quantityKg: 120, packSize: "500g", packType: "standard" as const, status: "queued" as const, progress: 0, createdAt: iso(0) },
 ];
+
 
 const finished = [
   { id: uid("fin", 1), product: "Amandes nature", packSize: "250g", packType: "standard" as const, units: 820, producedAt: iso(1) },
@@ -213,6 +227,8 @@ export const initialState: AppState = {
     finishedProducts,
     packSizes,
     clientTypes,
+    recipes,
+
     theme: "light",
   },
 };
