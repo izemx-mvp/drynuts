@@ -80,7 +80,7 @@ export function CrudTable<T extends { id: string }>({
   const [detail, setDetail] = useState<T | null>(null);
   const [form, setForm] = useState<Partial<T>>({});
   const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   const filtered = useMemo(() => {
     if (!q.trim()) return data;
@@ -92,7 +92,11 @@ export function CrudTable<T extends { id: string }>({
   }, [data, q, searchKeys, columns]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const current = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const safePage = Math.min(page, pageCount);
+  const current = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const pageNumbers = Array.from({ length: pageCount }, (_, i) => i + 1).filter(
+    (n) => n === 1 || n === pageCount || Math.abs(n - safePage) <= 1,
+  );
 
   const openNew = () => {
     setEditing(null);
@@ -258,22 +262,65 @@ export function CrudTable<T extends { id: string }>({
         </Table>
       </div>
 
-      <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
-        <div>
-          {filtered.length} résultat{filtered.length > 1 ? "s" : ""}
+      <div className="flex flex-wrap items-center justify-between gap-3 mt-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-3">
+          <span>
+            {filtered.length} résultat{filtered.length > 1 ? "s" : ""}
+          </span>
+          <span className="hidden sm:flex items-center gap-1.5">
+            <span>Par page</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setPage(1);
+              }}
+              className="h-7 rounded-md border bg-background px-1.5 text-xs"
+              aria-label="Éléments par page"
+            >
+              {[5, 10, 25, 50].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </span>
         </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="tactile"
+            disabled={safePage <= 1}
+            onClick={() => setPage(safePage - 1)}
+          >
             Précédent
           </Button>
-          <Badge variant="outline">
-            {page} / {pageCount}
-          </Badge>
-          <Button size="sm" variant="outline" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)}>
+          {pageNumbers.map((n, i) => (
+            <span key={n} className="flex items-center gap-1">
+              {i > 0 && n - pageNumbers[i - 1] > 1 && <span className="px-0.5">…</span>}
+              <Button
+                size="sm"
+                variant={n === safePage ? "default" : "ghost"}
+                className="h-8 w-8 p-0 tactile"
+                onClick={() => setPage(n)}
+              >
+                {n}
+              </Button>
+            </span>
+          ))}
+          <Button
+            size="sm"
+            variant="outline"
+            className="tactile"
+            disabled={safePage >= pageCount}
+            onClick={() => setPage(safePage + 1)}
+          >
             Suivant
           </Button>
         </div>
       </div>
+
 
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
         <DialogContent>

@@ -1,25 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
-import { PageHeader } from "@/components/PageHeader";
 import { CrudTable } from "@/components/CrudTable";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Truck, PackageOpen } from "lucide-react";
 import type { Supplier } from "@/lib/types";
 
-export const Route = createFileRoute("/_authenticated/suppliers")({
-  head: () => ({
-    meta: [
-      { title: "Fournisseurs — DryNuts" },
-      { name: "description", content: "Fournisseurs de matière première et d'emballage." },
-      { property: "og:title", content: "Fournisseurs — DryNuts" },
-      { property: "og:description", content: "Gérez vos fournisseurs par type." },
-    ],
-  }),
-  component: SuppliersPage,
-});
 
-function SuppliersPage() {
+export function SuppliersPanel() {
   const { state, update } = useStore();
   const [tab, setTab] = useState<"raw" | "packaging">("raw");
 
@@ -69,10 +56,6 @@ function SuppliersPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Fournisseurs"
-        subtitle="Répertoire unifié — filtré par type"
-      />
       <Tabs value={tab} onValueChange={(v) => setTab(v as "raw" | "packaging")}>
         <TabsList className="mb-4">
           <TabsTrigger value="raw" className="gap-2">

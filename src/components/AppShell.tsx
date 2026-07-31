@@ -1,24 +1,21 @@
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
-  Headphones,
   Factory,
-  Boxes,
-  Users,
-  ShoppingCart,
+  Handshake,
   Truck,
   Settings as SettingsIcon,
   LogOut,
-  Bell,
-  Search,
   Moon,
   Sun,
+  PanelLeftClose,
+  PanelLeftOpen,
+  User as UserIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useStore } from "@/lib/store";
 import logo from "@/assets/logo.png";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -29,26 +26,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { NotificationBell } from "@/components/NotificationBell";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/production", label: "Production", icon: Factory },
-  { to: "/finished", label: "Produits finis", icon: Boxes },
-  { to: "/clients", label: "Clients", icon: Users },
-  { to: "/orders", label: "Ventes / Commandes", icon: ShoppingCart },
-  { to: "/suppliers", label: "Fournisseurs", icon: Truck },
-  { to: "/customer-service", label: "Service Client", icon: Headphones },
+  { to: "/commercial", label: "Commercial", icon: Handshake },
+  { to: "/partners", label: "Partenaires & Service", icon: Truck },
   { to: "/settings", label: "Paramètres", icon: SettingsIcon },
 ] as const;
+
+const COLLAPSE_KEY = "drynuts.sidebar.collapsed";
 
 export function AppShell() {
   const { user, ready, logout } = useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { state, update } = useStore();
-  const [q, setQ] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === "1");
+  }, []);
 
   useEffect(() => {
     if (ready && !user) navigate({ to: "/login" });
@@ -60,9 +62,11 @@ export function AppShell() {
 
   if (!ready || !user) return null;
 
-  const activeTasks = state.tasks.filter((t) => t.status === "running").length;
-  const lowStock = state.rawMaterials.filter((r) => r.quantityKg <= r.threshold).length;
-  const notif = activeTasks + lowStock;
+  const toggleCollapsed = () =>
+    setCollapsed((c) => {
+      window.localStorage.setItem(COLLAPSE_KEY, c ? "0" : "1");
+      return !c;
+    });
 
   const toggleTheme = () =>
     update((s) => ({
@@ -70,116 +74,185 @@ export function AppShell() {
       settings: { ...s.settings, theme: s.settings.theme === "dark" ? "light" : "dark" },
     }));
 
+  const initials = user.name
+    .split(" ")
+    .map((s) => s[0])
+    .slice(0, 2)
+    .join("");
+
   return (
-    <div className="flex min-h-screen w-full bg-background">
-      <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-        <div className="flex items-center gap-3 px-5 h-16 border-b border-sidebar-border">
-          <img src={logo} alt="DryNuts" className="h-9 w-9 object-contain" width={36} height={36} />
-          <div>
-            <div className="font-bold tracking-tight text-sidebar-foreground">DryNuts</div>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-              Fruits secs · Maroc
-            </div>
-          </div>
-        </div>
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {nav.map((item) => {
-            const active =
-              pathname === item.to || (item.to !== "/dashboard" && pathname.startsWith(item.to));
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent",
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span className="truncate">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="p-3 border-t border-sidebar-border">
-          <div className="rounded-lg bg-sidebar-accent p-3 text-xs text-sidebar-accent-foreground">
-            <div className="font-semibold">Version démo</div>
-            <div className="text-muted-foreground mt-1">Données mockées locales</div>
-          </div>
-        </div>
-      </aside>
+    <TooltipProvider delayDuration={120}>
+      <div className="relative flex min-h-screen w-full bg-background">
+        {/* ambient brand atmosphere */}
+        <div className="mesh-canvas fixed inset-0 z-0" aria-hidden />
+        <div className="grain-overlay fixed inset-0 z-0" aria-hidden />
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b bg-card/70 backdrop-blur flex items-center gap-3 px-4 md:px-6">
-          <div className="relative w-full max-w-sm">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Rechercher…"
-              className="pl-9 bg-background"
-            />
-          </div>
-          <div className="ml-auto flex items-center gap-1">
-            <div className="relative">
-              <Button variant="ghost" size="icon" title="Notifications">
-                <Bell className="h-4 w-4" />
-              </Button>
-              {notif > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] pointer-events-none">
-                  {notif}
-                </Badge>
-              )}
-            </div>
-            <Button variant="ghost" size="icon" onClick={toggleTheme} title="Thème">
-              {state.settings.theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-2 px-2 ml-1">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                      {user.name.split(" ").map((s) => s[0]).slice(0, 2).join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="hidden sm:block text-left">
-                    <div className="text-sm font-medium leading-none">{user.name}</div>
-                    <div className="text-[11px] text-muted-foreground">{user.email}</div>
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
-                  <SettingsIcon className="h-4 w-4 mr-2" /> Paramètres
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    logout();
-                    navigate({ to: "/login" });
-                  }}
-                >
-                  <LogOut className="h-4 w-4 mr-2" /> Déconnexion
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
-
-        <main
-          className="flex-1 overflow-y-auto p-4 md:p-6 relative"
-          style={{
-            backgroundImage:
-              "radial-gradient(1200px 600px at -10% -10%, color-mix(in oklch, var(--primary) 10%, transparent) 0%, transparent 60%), radial-gradient(900px 500px at 110% 10%, color-mix(in oklch, var(--accent) 18%, transparent) 0%, transparent 55%), radial-gradient(700px 500px at 50% 120%, color-mix(in oklch, var(--primary) 8%, transparent) 0%, transparent 60%)",
-          }}
+        <aside
+          className={cn(
+            "relative z-10 hidden md:flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar/85 backdrop-blur-xl text-sidebar-foreground",
+            "transition-[width] duration-500 ease-[var(--ease-spring)] will-change-[width]",
+            collapsed ? "w-[4.75rem]" : "w-64",
+          )}
         >
-          <Outlet />
-        </main>
+          <div
+            className={cn(
+              "flex items-center h-16 border-b border-sidebar-border px-3",
+              collapsed ? "justify-center" : "gap-3 px-4",
+            )}
+          >
+            <div className="logo-mark h-10 w-10">
+              <img src={logo} alt="Logo DryNuts" width={40} height={40} />
+            </div>
+            <div
+              className={cn(
+                "min-w-0 overflow-hidden transition-all duration-400 ease-[var(--ease-out-soft)]",
+                collapsed ? "w-0 opacity-0" : "w-auto opacity-100",
+              )}
+            >
+              <div className="font-bold tracking-tight truncate">DryNuts</div>
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">
+                Fruits secs · Maroc
+              </div>
+            </div>
+          </div>
+
+          <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2.5 space-y-1.5">
+            {nav.map((item) => {
+              const active =
+                pathname === item.to || (item.to !== "/dashboard" && pathname.startsWith(item.to));
+              const Icon = item.icon;
+              const link = (
+                <Link
+                  to={item.to}
+                  className={cn(
+                    "group relative flex h-11 items-center rounded-xl text-sm font-medium overflow-hidden",
+                    "transition-all duration-300 ease-[var(--ease-spring)]",
+                    collapsed ? "justify-center px-0" : "gap-3 px-3",
+                    active
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_8px_20px_-10px_var(--sidebar-primary)]"
+                      : "hover:bg-sidebar-accent hover:translate-x-0.5",
+                  )}
+                >
+                  {active && (
+                    <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-[var(--accent)]" />
+                  )}
+                  <Icon className="h-[18px] w-[18px] shrink-0" />
+                  <span
+                    className={cn(
+                      "truncate transition-all duration-300 ease-[var(--ease-out-soft)]",
+                      collapsed ? "w-0 opacity-0" : "w-auto opacity-100",
+                    )}
+                  >
+                    {item.label}
+                  </span>
+                </Link>
+              );
+              return (
+                <Tooltip key={item.to}>
+                  <TooltipTrigger asChild>{link}</TooltipTrigger>
+                  {collapsed && <TooltipContent side="right">{item.label}</TooltipContent>}
+                </Tooltip>
+              );
+            })}
+          </nav>
+
+          <div className="p-2.5 border-t border-sidebar-border">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  onClick={toggleCollapsed}
+                  className={cn("w-full h-10 tactile", collapsed ? "px-0" : "justify-start gap-3 px-3")}
+                >
+                  {collapsed ? (
+                    <PanelLeftOpen className="h-[18px] w-[18px]" />
+                  ) : (
+                    <>
+                      <PanelLeftClose className="h-[18px] w-[18px]" />
+                      <span className="text-sm">Réduire</span>
+                    </>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              {collapsed && <TooltipContent side="right">Déployer le menu</TooltipContent>}
+            </Tooltip>
+          </div>
+        </aside>
+
+        <div className="relative z-10 flex-1 flex flex-col min-w-0">
+          <header className="sticky top-0 z-20 h-16 border-b bg-card/70 backdrop-blur-xl flex items-center gap-3 px-4 md:px-6">
+            <GlobalSearch />
+            <div className="ml-auto flex items-center gap-1">
+              <NotificationBell />
+              <Button variant="ghost" size="icon" onClick={toggleTheme} title="Thème" className="tactile">
+                {state.settings.theme === "dark" ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="gap-2 px-2 ml-1 tactile">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="hidden sm:block text-left">
+                      <div className="text-sm font-medium leading-none">{user.name}</div>
+                      <div className="text-[11px] text-muted-foreground">{user.email}</div>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="flex items-center gap-2">
+                    <UserIcon className="h-4 w-4" /> Mon compte
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
+                    <SettingsIcon className="h-4 w-4 mr-2" /> Paramètres
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      logout();
+                      navigate({ to: "/login" });
+                    }}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" /> Se déconnecter
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </header>
+
+          {/* mobile nav */}
+          <nav className="md:hidden flex gap-1 overflow-x-auto border-b bg-card/60 px-3 py-2">
+            {nav.map((item) => {
+              const active =
+                pathname === item.to || (item.to !== "/dashboard" && pathname.startsWith(item.to));
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors",
+                    active ? "bg-primary text-primary-foreground" : "hover:bg-accent/20",
+                  )}
+                >
+                  <Icon className="h-4 w-4" /> {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <main className="flex-1 p-4 md:p-6 min-w-0">
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }

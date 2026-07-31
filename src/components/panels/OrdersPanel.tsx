@@ -1,7 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useStore, genId } from "@/lib/store";
-import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,26 +55,6 @@ import {
   rollsFor,
 } from "@/lib/pipeline";
 
-export const Route = createFileRoute("/_authenticated/orders")({
-  head: () => ({
-    meta: [
-      { title: "Ventes / Commandes — DryNuts" },
-      {
-        name: "description",
-        content:
-          "Pipeline commercial DryNuts : de la commande client à la production puis à la livraison.",
-      },
-      { property: "og:title", content: "Ventes / Commandes — DryNuts" },
-      {
-        property: "og:description",
-        content: "Pipeline automatisé commande → production → prête → livrée.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
-  component: OrdersPage,
-});
 
 const statusMeta: Record<OrderStatus, { label: string; cn: string }> = {
   pending: { label: "Reçue", cn: "border-muted-foreground text-muted-foreground" },
@@ -93,7 +71,7 @@ const pipelineSteps: { key: OrderStatus; label: string; icon: typeof ShoppingCar
   { key: "delivered", label: "Livrée", icon: Truck },
 ];
 
-function OrdersPage() {
+export function OrdersPanel() {
   const { state, update } = useStore();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<string>("all");
@@ -213,10 +191,7 @@ function OrdersPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Ventes / Commandes"
-        subtitle="Pipeline automatisé : commande → production → prête → livraison"
-        actions={
+      <div className="flex justify-end mb-4">
           <Dialog open={openNew} onOpenChange={setOpenNew}>
             <DialogTrigger asChild>
               <Button>
@@ -379,8 +354,7 @@ function OrdersPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        }
-      />
+      </div>
 
       {/* Pipeline overview */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
