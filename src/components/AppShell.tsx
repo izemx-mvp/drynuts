@@ -38,7 +38,7 @@ const nav = [
   { to: "/production", label: "Production", icon: Factory },
   { to: "/commercial", label: "Commercial", icon: Handshake },
   { to: "/partners", label: "Fournisseurs", icon: Truck },
-  { to: "/service", label: "Service Client", icon: Headphones },
+  { to: "/service", label: "Service Client IA", icon: Headphones },
   { to: "/settings", label: "Paramètres", icon: SettingsIcon },
 ] as const;
 

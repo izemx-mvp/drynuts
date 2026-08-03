@@ -8,13 +8,13 @@ import { CustomerServicePanel } from "@/components/panels/CustomerServicePanel";
 export const Route = createFileRoute("/_authenticated/service")({
   head: () => ({
     meta: [
-      { title: "Service Client — DryNuts" },
+      { title: "Service Client IA — DryNuts" },
       {
         name: "description",
         content:
-          "Horaires d'ouverture, services proposés, réseaux sociaux et FAQ du service client DryNuts.",
+          "Horaires d'ouverture, services proposés, réseaux sociaux et FAQ du service client IA DryNuts.",
       },
-      { property: "og:title", content: "Service Client — DryNuts" },
+      { property: "og:title", content: "Service Client IA — DryNuts" },
       {
         property: "og:description",
         content: "La relation client DryNuts : horaires, services, réseaux et FAQ.",
@@ -50,7 +50,7 @@ function ServicePage() {
   return (
     <div className="section-accent">
       <PageHeader
-        title="Service Client"
+        title="Service Client IA"
         subtitle="Horaires, services, réseaux sociaux et FAQ — tout l'aval de la relation client"
       />
 
